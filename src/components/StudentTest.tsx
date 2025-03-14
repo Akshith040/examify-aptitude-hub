@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -47,11 +46,16 @@ const StudentTest = () => {
       if (error) throw error;
       
       if (data && data.length > 0) {
-        // Transform data to match Question type if needed
+        // Transform data to match Question type
         const formattedQuestions: Question[] = data.map(q => ({
           id: q.id,
           text: q.text,
-          options: Array.isArray(q.options) ? q.options : JSON.parse(q.options),
+          // Properly handle options parsing based on its type
+          options: Array.isArray(q.options) 
+            ? q.options 
+            : (typeof q.options === 'string' 
+                ? JSON.parse(q.options) 
+                : Object.values(q.options).map(val => String(val))),
           correctOption: q.correct_option,
           explanation: q.explanation
         }));

@@ -35,7 +35,7 @@ const StudentDashboard = () => {
       
       if (error) throw error;
       
-      // Transform data to match TestResult type if needed
+      // Transform data to match TestResult type
       const formattedResults: TestResult[] = data.map(result => ({
         id: result.id,
         userId: result.user_id,
@@ -44,7 +44,15 @@ const StudentDashboard = () => {
         score: result.score,
         totalQuestions: result.total_questions,
         timeSpent: result.time_spent,
-        answers: result.answers
+        // Parse answers JSON to ensure proper typing
+        answers: Array.isArray(result.answers) 
+          ? result.answers.map((answer: any) => ({
+              questionId: answer.questionId,
+              selectedOption: answer.selectedOption,
+              isCorrect: answer.isCorrect,
+              timeSpent: answer.timeSpent
+            }))
+          : []
       }));
       
       setTestResults(formattedResults);
