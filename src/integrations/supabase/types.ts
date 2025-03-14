@@ -9,7 +9,99 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          role: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          name?: string | null
+          role: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          role?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          correct_option: number
+          created_at: string
+          explanation: string | null
+          id: string
+          options: Json
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          correct_option: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options: Json
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          correct_option?: number
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          options?: Json
+          text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      test_results: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          score: number
+          test_date: string
+          time_spent: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          score: number
+          test_date?: string
+          time_spent: number
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          score?: number
+          test_date?: string
+          time_spent?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

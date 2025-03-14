@@ -7,54 +7,93 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-
-interface User {
-  id: string;
-  username: string;
-  password: string;
-  role: 'student' | 'admin';
-}
-
-// Temporary mock users until connected to a real database
-const mockUsers: User[] = [
-  { id: '1', username: 'admin', password: 'admin123', role: 'admin' },
-  { id: '2', username: 'student1', password: 'student123', role: 'student' }
-];
+import { supabase } from '@/integrations/supabase/client';
 
 const AuthForm = () => {
+  const [activeTab, setActiveTab] = useState('login');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate network request
-    setTimeout(() => {
-      const user = mockUsers.find(
-        (user) => user.username === username && user.password === password
-      );
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      if (user) {
-        // Store user data in local storage (would use a proper auth system in production)
-        localStorage.setItem('currentUser', JSON.stringify(user));
+      if (error) throw error;
+      
+      if (data.user) {
+        // Get user profile to determine role
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError) throw profileError;
+        
+        // Store user data in local storage 
+        localStorage.setItem('currentUser', JSON.stringify({
+          id: data.user.id,
+          username: data.user.user_metadata.username || email.split('@')[0],
+          email: data.user.email,
+          role: profileData.role,
+          name: data.user.user_metadata.name || ''
+        }));
         
         toast.success('Login successful');
         
         // Redirect based on role
-        if (user.role === 'admin') {
+        if (profileData.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/student/dashboard');
         }
-      } else {
-        toast.error('Invalid username or password');
       }
-      
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            name,
+            role: 'student'
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        toast.success('Signup successful! Please check your email for verification link.');
+        setActiveTab('login');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Signup failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,20 +106,22 @@ const AuthForm = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-1">
+          <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="username"
-                    placeholder="Enter your username"
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email"
                     required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="glass-input"
                   />
                 </div>
@@ -105,11 +146,69 @@ const AuthForm = () => {
                 </Button>
               </form>
             </TabsContent>
+            <TabsContent value="signup">
+              <form onSubmit={handleSignup} className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Enter your full name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="glass-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    placeholder="Choose a username"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="glass-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="glass-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="Create a password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="glass-input"
+                    minLength={6}
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating account..." : "Create account"}
+                </Button>
+              </form>
+            </TabsContent>
           </Tabs>
         </CardContent>
         <CardFooter className="flex flex-col">
           <p className="text-sm text-muted-foreground mt-2">
-            Login with <span className="font-medium">admin/admin123</span> for admin access or <span className="font-medium">student1/student123</span> for student access
+            For testing, you can create a new account or use demo credentials that will be automatically inserted.
           </p>
         </CardFooter>
       </Card>

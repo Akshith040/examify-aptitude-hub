@@ -1,37 +1,75 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { mockTestResults } from '@/mock/data';
 import { TestResult } from '@/types';
 import { Brain, ClipboardList, LogOut, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-  const [testResults, setTestResults] = React.useState<TestResult[]>([]);
+  const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   // If not logged in, redirect to login
-  React.useEffect(() => {
+  useEffect(() => {
     if (!currentUser.id) {
       navigate('/');
     } else {
-      // Filter test results for current user
-      setTestResults(mockTestResults.filter(result => result.userId === currentUser.id));
+      fetchTestResults();
     }
   }, [currentUser, navigate]);
+  
+  const fetchTestResults = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('test_results')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform data to match TestResult type if needed
+      const formattedResults: TestResult[] = data.map(result => ({
+        id: result.id,
+        userId: result.user_id,
+        userName: currentUser.name || currentUser.username,
+        testDate: result.test_date,
+        score: result.score,
+        totalQuestions: result.total_questions,
+        timeSpent: result.time_spent,
+        answers: result.answers
+      }));
+      
+      setTestResults(formattedResults);
+    } catch (error: any) {
+      console.error('Error fetching test results:', error);
+      toast.error('Failed to load test results');
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const startTest = () => {
     navigate('/student/test');
   };
   
-  const logout = () => {
-    localStorage.removeItem('currentUser');
-    navigate('/');
-    toast.info('Logged out successfully');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      localStorage.removeItem('currentUser');
+      navigate('/');
+      toast.info('Logged out successfully');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to log out');
+    }
   };
   
   return (
@@ -90,7 +128,11 @@ const StudentDashboard = () => {
               <CardDescription>View your previous test attempts and scores</CardDescription>
             </CardHeader>
             <CardContent>
-              {testResults.length > 0 ? (
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">Loading test results...</p>
+                </div>
+              ) : testResults.length > 0 ? (
                 <div className="space-y-4">
                   {testResults.map((result) => (
                     <div key={result.id} className="flex items-center gap-4 p-3 border rounded-lg">
