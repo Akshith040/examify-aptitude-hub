@@ -7,6 +7,8 @@ export interface Question {
   explanation?: string;
 }
 
+export type QuestionStatus = 'answered' | 'unanswered' | 'answered-review' | 'unanswered-review';
+
 export interface TestResult {
   id: string;
   userId: string;

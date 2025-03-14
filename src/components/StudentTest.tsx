@@ -7,8 +7,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import QuestionTimer from '@/components/QuestionTimer';
-import { Question, TestResult } from '@/types';
+import { Question, TestResult, QuestionStatus } from '@/types';
 import { mockQuestions } from '@/mock/data';
+import { CheckIcon, XIcon, BookmarkIcon, HelpCircleIcon } from 'lucide-react';
 
 const StudentTest = () => {
   const [questions] = useState<Question[]>(mockQuestions);
@@ -18,6 +19,13 @@ const StudentTest = () => {
   const [testComplete, setTestComplete] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [timeSpentPerQuestion, setTimeSpentPerQuestion] = useState<number[]>(Array(questions.length).fill(0));
+  const [questionStatus, setQuestionStatus] = useState<QuestionStatus[]>(
+    Array(questions.length).fill('unanswered')
+  );
+  const [markedForReview, setMarkedForReview] = useState<boolean[]>(
+    Array(questions.length).fill(false)
+  );
+  
   const navigate = useNavigate();
   
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
@@ -38,6 +46,34 @@ const StudentTest = () => {
     const newSelectedOptions = [...selectedOptions];
     newSelectedOptions[currentQuestionIndex] = parseInt(value);
     setSelectedOptions(newSelectedOptions);
+    
+    // Update question status
+    updateQuestionStatus(currentQuestionIndex, parseInt(value), markedForReview[currentQuestionIndex]);
+  };
+
+  const updateQuestionStatus = (index: number, selectedOption: number, isMarkedForReview: boolean) => {
+    const newStatus = [...questionStatus];
+    
+    if (selectedOption !== -1) {
+      newStatus[index] = isMarkedForReview ? 'answered-review' : 'answered';
+    } else {
+      newStatus[index] = isMarkedForReview ? 'unanswered-review' : 'unanswered';
+    }
+    
+    setQuestionStatus(newStatus);
+  };
+  
+  const toggleMarkForReview = () => {
+    const newMarkedForReview = [...markedForReview];
+    newMarkedForReview[currentQuestionIndex] = !newMarkedForReview[currentQuestionIndex];
+    setMarkedForReview(newMarkedForReview);
+    
+    // Update question status
+    updateQuestionStatus(
+      currentQuestionIndex, 
+      selectedOptions[currentQuestionIndex], 
+      newMarkedForReview[currentQuestionIndex]
+    );
   };
   
   const moveToNextQuestion = () => {
@@ -46,6 +82,10 @@ const StudentTest = () => {
     } else {
       completeTest();
     }
+  };
+
+  const goToQuestion = (index: number) => {
+    setCurrentQuestionIndex(index);
   };
   
   const handleTimeUp = () => {
@@ -102,11 +142,44 @@ const StudentTest = () => {
     newSelectedOptions[currentQuestionIndex] = option;
     setSelectedOptions(newSelectedOptions);
     
+    // Update question status
+    updateQuestionStatus(currentQuestionIndex, option, markedForReview[currentQuestionIndex]);
+    
     // Update time spent for this question (for demonstration purposes, using a random time <= 60)
     const timeSpent = Math.floor(Math.random() * 40) + 20; // Between 20-60 seconds
     const newTimeSpent = [...timeSpentPerQuestion];
     newTimeSpent[currentQuestionIndex] = timeSpent;
     setTimeSpentPerQuestion(newTimeSpent);
+  };
+
+  const getStatusIcon = (status: QuestionStatus) => {
+    switch (status) {
+      case 'answered':
+        return <CheckIcon className="h-3 w-3" />;
+      case 'unanswered':
+        return <XIcon className="h-3 w-3" />;
+      case 'answered-review':
+        return <BookmarkIcon className="h-3 w-3" />;
+      case 'unanswered-review':
+        return <HelpCircleIcon className="h-3 w-3" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: QuestionStatus) => {
+    switch (status) {
+      case 'answered':
+        return 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200';
+      case 'unanswered':
+        return 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200';
+      case 'answered-review':
+        return 'bg-violet-100 text-violet-800 border-violet-300 hover:bg-violet-200';
+      case 'unanswered-review':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200';
+    }
   };
   
   const renderStartPage = () => (
@@ -166,6 +239,39 @@ const StudentTest = () => {
                 </div>
               ))}
             </RadioGroup>
+          </div>
+
+          {/* Question Navigation */}
+          <div className="mt-8">
+            <h4 className="text-sm font-medium mb-2">Question Navigation</h4>
+            <div className="flex flex-wrap gap-2">
+              {questions.map((_, index) => (
+                <Button
+                  key={index}
+                  size="sm"
+                  variant="outline"
+                  className={`w-10 h-10 p-0 font-medium flex items-center justify-center ${getStatusColor(questionStatus[index])}`}
+                  onClick={() => goToQuestion(index)}
+                >
+                  <span className="sr-only">Question {index + 1}</span>
+                  <span>{index + 1}</span>
+                  <span className="absolute bottom-0.5 right-0.5">
+                    {getStatusIcon(questionStatus[index])}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="outline"
+              onClick={toggleMarkForReview}
+              className="mr-2"
+            >
+              {markedForReview[currentQuestionIndex] ? 'Unmark for Review' : 'Mark for Review'}
+              <BookmarkIcon className="ml-1 h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
