@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { cn } from "@/lib/utils";
 
 interface QuestionTimerProps {
   duration: number; // Duration in seconds
@@ -52,8 +53,7 @@ const QuestionTimer: React.FC<QuestionTimerProps> = ({ duration, onTimeUp }) => 
       </div>
       <Progress 
         value={progressPercentage} 
-        className="h-2 transition-all duration-200 ease-linear"
-        indicatorClassName={`${getColorClass()} transition-all duration-200 ease-linear`}
+        className={cn("h-2 transition-all duration-200 ease-linear", getColorClass())}
       />
     </div>
   );
