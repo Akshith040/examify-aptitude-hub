@@ -1,12 +1,12 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { TestResult } from '@/types';
-import { Brain, ClipboardList, LogOut, ArrowRight } from 'lucide-react';
+import { Brain, ClipboardList, LogOut, ArrowRight, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { seedSupabase } from '@/utils/seedSupabase';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -14,6 +14,7 @@ const StudentDashboard = () => {
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
   
   // If not logged in, redirect to login
   useEffect(() => {
@@ -79,6 +80,25 @@ const StudentDashboard = () => {
       toast.error('Failed to log out');
     }
   };
+
+  const handleSeedData = async () => {
+    setIsSeeding(true);
+    try {
+      const result = await seedSupabase();
+      if (result.success) {
+        toast.success('Sample data added successfully!');
+        // Refresh test results
+        fetchTestResults();
+      } else {
+        toast.error('Failed to add sample data');
+      }
+    } catch (error) {
+      console.error('Error seeding data:', error);
+      toast.error('An error occurred while adding sample data');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
   
   return (
     <div className="container mx-auto py-10 px-4 animate-fade-in">
@@ -87,10 +107,16 @@ const StudentDashboard = () => {
           <h1 className="text-3xl font-medium">Welcome, {currentUser.name || currentUser.username}</h1>
           <p className="text-muted-foreground">Access your aptitude tests and view your performance</p>
         </div>
-        <Button variant="outline" size="sm" onClick={logout} className="gap-2">
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleSeedData} disabled={isSeeding} className="gap-2">
+            <Database className="h-4 w-4" />
+            {isSeeding ? 'Adding Data...' : 'Add Sample Data'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={logout} className="gap-2">
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
