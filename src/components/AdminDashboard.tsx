@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,6 @@ const AdminDashboard = () => {
   
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   
-  // If not logged in or not admin, redirect to login
   useEffect(() => {
     if (!currentUser.id || currentUser.role !== 'admin') {
       navigate('/');
@@ -57,7 +55,6 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch questions
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select('*');
@@ -74,11 +71,10 @@ const AdminDashboard = () => {
                 : Object.values(q.options).map(val => String(val))),
           correctOption: q.correct_option,
           explanation: q.explanation || undefined,
-          topic: q.topic || undefined  // Handle the case where topic might be undefined
+          topic: q.topic || undefined
         }));
         setQuestions(formattedQuestions);
         
-        // Extract unique topics - only include those that actually have a topic defined
         const allTopics = formattedQuestions
           .map(q => q.topic)
           .filter((topic): topic is string => !!topic);
@@ -88,18 +84,16 @@ const AdminDashboard = () => {
         }
       }
       
-      // For demo purposes, use mock data for users and test results
       setUsers(mockUsers.filter(user => user.role === 'student'));
       setTestResults(mockTestResults);
       
-      // Mock scheduled tests for demo
       const mockScheduledTests: ScheduledTest[] = [
         {
           id: '1',
           title: 'Mid-term Assessment',
           description: 'Comprehensive test covering all topics from Quarter 1',
-          startDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-          endDate: new Date(Date.now() + 86400000 * 5).toISOString(), // 5 days from now
+          startDate: new Date(Date.now() + 86400000).toISOString(),
+          endDate: new Date(Date.now() + 86400000 * 5).toISOString(),
           duration: 90,
           topics: ['Mathematics', 'Science'],
           questionCount: 20,
@@ -110,8 +104,8 @@ const AdminDashboard = () => {
           id: '2',
           title: 'Final Exam',
           description: 'Year-end comprehensive assessment',
-          startDate: new Date(Date.now() + 86400000 * 30).toISOString(), // 30 days from now
-          endDate: new Date(Date.now() + 86400000 * 35).toISOString(), // 35 days from now
+          startDate: new Date(Date.now() + 86400000 * 30).toISOString(),
+          endDate: new Date(Date.now() + 86400000 * 35).toISOString(),
           duration: 120,
           topics: ['Mathematics', 'Science', 'English', 'History'],
           questionCount: 30,
@@ -175,12 +169,11 @@ const AdminDashboard = () => {
                 : Object.values(data.options).map(val => String(val))),
           correctOption: data.correct_option,
           explanation: data.explanation || undefined,
-          topic: data.topic || undefined  // Handle the case where topic might be undefined
+          topic: data.topic || undefined
         };
         
         setQuestions(prev => [...prev, newQ]);
         
-        // If it's a new topic, add it to the topics list
         if (newQuestion.topic && !topics.includes(newQuestion.topic)) {
           setTopics(prev => [...prev, newQuestion.topic!]);
         }
@@ -258,11 +251,10 @@ const AdminDashboard = () => {
     }
     
     try {
-      // Simple CSV parsing (in a real app, use a proper CSV parser)
       const lines = csvData.trim().split('\n');
       const newQuestions: Question[] = [];
       
-      for (let i = 1; i < lines.length; i++) { // Skip header row
+      for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(',');
         if (cols.length >= 6) {
           newQuestions.push({
@@ -292,7 +284,6 @@ const AdminDashboard = () => {
 
   const handleBulkUpload = async (newQuestions: Question[]) => {
     try {
-      // Convert questions to Supabase format
       const questionsToInsert = newQuestions.map(q => ({
         text: q.text,
         options: q.options,
@@ -319,12 +310,11 @@ const AdminDashboard = () => {
                 : Object.values(q.options).map(val => String(val))),
           correctOption: q.correct_option,
           explanation: q.explanation || undefined,
-          topic: q.topic || undefined  // Handle the case where topic might be undefined
+          topic: q.topic || undefined
         }));
         
         setQuestions(prev => [...prev, ...addedQuestions]);
         
-        // Update topics list with any new topics
         const newTopics = addedQuestions
           .map(q => q.topic)
           .filter((topic): topic is string => !!topic && !topics.includes(topic));
@@ -342,7 +332,6 @@ const AdminDashboard = () => {
   };
   
   const handleScheduleTest = (test: Omit<ScheduledTest, 'id'>) => {
-    // For demo, assign a random ID
     const newTest: ScheduledTest = {
       ...test,
       id: `test-${Date.now()}`
@@ -368,7 +357,6 @@ const AdminDashboard = () => {
   };
   
   const downloadResults = () => {
-    // In a real app, this would generate a CSV/Excel file
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Student Name,Test Date,Score,Total Questions,Time Spent\n"
       + testResults.map(result => {
