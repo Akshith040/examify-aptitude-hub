@@ -28,7 +28,27 @@ const AuthForm = () => {
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        // Handle email not confirmed error specifically
+        if (error.message.includes('Email not confirmed')) {
+          // Try to sign up again to resend confirmation email
+          await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                username: email.split('@')[0],
+                name: name || email.split('@')[0],
+                role: email.includes('admin') ? 'admin' : 'student'
+              }
+            }
+          });
+          
+          toast.info('Email confirmation required. We have resent the confirmation email.');
+          throw new Error('Please check your email to confirm your account before logging in.');
+        }
+        throw error;
+      }
       
       if (data.user) {
         // Get user profile to determine role
@@ -78,7 +98,7 @@ const AuthForm = () => {
           data: {
             username,
             name,
-            role: 'student'
+            role: email.includes('admin') ? 'admin' : 'student'
           }
         }
       });
@@ -86,8 +106,13 @@ const AuthForm = () => {
       if (error) throw error;
       
       if (data.user) {
-        toast.success('Signup successful! Please check your email for verification link.');
-        setActiveTab('login');
+        if (data.user.identities && data.user.identities.length === 0) {
+          toast.error('This email is already registered. Please login instead.');
+          setActiveTab('login');
+        } else {
+          toast.success('Signup successful! Please check your email for verification link or try to login directly.');
+          setActiveTab('login');
+        }
       }
     } catch (error: any) {
       toast.error(error.message || 'Signup failed');
@@ -101,7 +126,7 @@ const AuthForm = () => {
     setPassword('admin123');
     setUsername('admin');
     setName('Admin User');
-    toast.info('Admin credentials filled. You can sign up as admin now.');
+    toast.info('Admin credentials filled. You can sign up or login now.');
   };
 
   const fillStudentCredentials = () => {
