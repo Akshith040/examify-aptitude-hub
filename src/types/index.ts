@@ -5,6 +5,7 @@ export interface Question {
   options: string[];
   correctOption: number;
   explanation?: string;
+  topic?: string;
 }
 
 export type QuestionStatus = 'answered' | 'unanswered' | 'answered-review' | 'unanswered-review';
@@ -23,6 +24,7 @@ export interface TestResult {
     isCorrect: boolean;
     timeSpent: number; // In seconds
   }[];
+  testId?: string;
 }
 
 export interface User {
@@ -32,4 +34,17 @@ export interface User {
   role: 'student' | 'admin';
   name?: string;
   email?: string;
+}
+
+export interface ScheduledTest {
+  id: string;
+  title: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  duration: number; // In minutes
+  topics: string[];
+  questionCount: number;
+  isActive: boolean;
+  createdAt: string;
 }

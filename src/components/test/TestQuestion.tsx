@@ -8,6 +8,8 @@ import { BookmarkIcon } from 'lucide-react';
 import QuestionTimer from '@/components/QuestionTimer';
 import { Question, QuestionStatus } from '@/types';
 import QuestionNavigation from './QuestionNavigation';
+import TestProgressBar from './TestProgressBar';
+import TotalTestTimer from './TotalTestTimer';
 
 interface TestQuestionProps {
   question: Question;
@@ -16,11 +18,14 @@ interface TestQuestionProps {
   selectedOption: number;
   questionStatus: QuestionStatus[];
   markedForReview: boolean;
+  testStartTime: Date;
   onOptionChange: (value: string) => void;
   onNextQuestion: () => void;
   onTimeUp: () => void;
   onToggleMarkForReview: () => void;
   onQuestionSelect: (index: number) => void;
+  onTotalTimeUpdate: (time: number) => void;
+  isTestComplete: boolean;
 }
 
 const TestQuestion: React.FC<TestQuestionProps> = ({
@@ -30,22 +35,34 @@ const TestQuestion: React.FC<TestQuestionProps> = ({
   selectedOption,
   questionStatus,
   markedForReview,
+  testStartTime,
   onOptionChange,
   onNextQuestion,
   onTimeUp,
   onToggleMarkForReview,
-  onQuestionSelect
+  onQuestionSelect,
+  onTotalTimeUpdate,
+  isTestComplete
 }) => {
   return (
     <Card className="w-full max-w-3xl mx-auto glass-panel animate-fade-in">
       <CardHeader>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-4">
           <div>
             <span className="inline-flex items-center justify-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary ring-1 ring-inset ring-primary/30">
               Question {currentQuestionIndex + 1}/{totalQuestions}
             </span>
           </div>
+          <TotalTestTimer 
+            startTime={testStartTime} 
+            isTestComplete={isTestComplete} 
+            onTimeUpdate={onTotalTimeUpdate} 
+          />
         </div>
+        <TestProgressBar 
+          currentQuestionIndex={currentQuestionIndex} 
+          totalQuestions={totalQuestions} 
+        />
         <QuestionTimer duration={60} onTimeUp={onTimeUp} />
       </CardHeader>
       <CardContent className="pt-6">
