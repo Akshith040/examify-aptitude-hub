@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Question, TestResult, QuestionStatus } from '@/types';
+import { Question, TestResult, QuestionStatus, SupabaseQuestion } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import TestStartPage from './test/TestStartPage';
 import TestQuestion from './test/TestQuestion';
@@ -47,7 +47,7 @@ const StudentTest = () => {
       
       if (data && data.length > 0) {
         // Transform data to match Question type
-        const formattedQuestions: Question[] = data.map(q => ({
+        const formattedQuestions: Question[] = data.map((q: SupabaseQuestion) => ({
           id: q.id,
           text: q.text,
           // Properly handle options parsing based on its type
@@ -57,8 +57,8 @@ const StudentTest = () => {
                 ? JSON.parse(q.options) 
                 : Object.values(q.options).map(val => String(val))),
           correctOption: q.correct_option,
-          explanation: q.explanation,
-          topic: q.topic
+          explanation: q.explanation || undefined,
+          topic: q.topic || undefined  // Handle the case where topic might be undefined
         }));
         
         setQuestions(formattedQuestions);

@@ -48,3 +48,15 @@ export interface ScheduledTest {
   isActive: boolean;
   createdAt: string;
 }
+
+// This interface maps to the Supabase questions table structure
+export interface SupabaseQuestion {
+  id: string;
+  text: string;
+  options: any; // JSON field in Supabase
+  correct_option: number;
+  explanation: string | null;
+  topic?: string; // Add this as optional since it doesn't exist in the DB yet
+  created_at: string;
+  updated_at: string;
+}

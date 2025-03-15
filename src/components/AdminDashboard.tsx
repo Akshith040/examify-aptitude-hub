@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { mockUsers, mockQuestions, mockTestResults } from '@/mock/data';
-import { User, Question, TestResult, ScheduledTest } from '@/types';
+import { User, Question, TestResult, ScheduledTest, SupabaseQuestion } from '@/types';
 import { PlusIcon, Trash2Icon, FileSpreadsheetIcon, DownloadIcon, UsersIcon, FileTextIcon, BarChartIcon, CalendarIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import QuestionUploader from './admin/QuestionUploader';
@@ -64,7 +64,7 @@ const AdminDashboard = () => {
       
       if (questionsError) throw questionsError;
       if (questionsData) {
-        const formattedQuestions: Question[] = questionsData.map(q => ({
+        const formattedQuestions: Question[] = questionsData.map((q: SupabaseQuestion) => ({
           id: q.id,
           text: q.text,
           options: Array.isArray(q.options) 
@@ -73,12 +73,12 @@ const AdminDashboard = () => {
                 ? JSON.parse(q.options) 
                 : Object.values(q.options).map(val => String(val))),
           correctOption: q.correct_option,
-          explanation: q.explanation,
-          topic: q.topic
+          explanation: q.explanation || undefined,
+          topic: q.topic || undefined  // Handle the case where topic might be undefined
         }));
         setQuestions(formattedQuestions);
         
-        // Extract unique topics
+        // Extract unique topics - only include those that actually have a topic defined
         const allTopics = formattedQuestions
           .map(q => q.topic)
           .filter((topic): topic is string => !!topic);
@@ -174,8 +174,8 @@ const AdminDashboard = () => {
                 ? JSON.parse(data.options) 
                 : Object.values(data.options).map(val => String(val))),
           correctOption: data.correct_option,
-          explanation: data.explanation,
-          topic: data.topic
+          explanation: data.explanation || undefined,
+          topic: data.topic || undefined  // Handle the case where topic might be undefined
         };
         
         setQuestions(prev => [...prev, newQ]);
@@ -309,7 +309,7 @@ const AdminDashboard = () => {
       if (error) throw error;
       
       if (data) {
-        const addedQuestions: Question[] = data.map(q => ({
+        const addedQuestions: Question[] = data.map((q: SupabaseQuestion) => ({
           id: q.id,
           text: q.text,
           options: Array.isArray(q.options) 
@@ -318,8 +318,8 @@ const AdminDashboard = () => {
                 ? JSON.parse(q.options) 
                 : Object.values(q.options).map(val => String(val))),
           correctOption: q.correct_option,
-          explanation: q.explanation,
-          topic: q.topic
+          explanation: q.explanation || undefined,
+          topic: q.topic || undefined  // Handle the case where topic might be undefined
         }));
         
         setQuestions(prev => [...prev, ...addedQuestions]);
