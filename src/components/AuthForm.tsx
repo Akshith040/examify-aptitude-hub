@@ -96,6 +96,22 @@ const AuthForm = () => {
     }
   };
 
+  const fillAdminCredentials = () => {
+    setEmail('admin@examify.com');
+    setPassword('admin123');
+    setUsername('admin');
+    setName('Admin User');
+    toast.info('Admin credentials filled. You can sign up as admin now.');
+  };
+
+  const fillStudentCredentials = () => {
+    setEmail('student@examify.com');
+    setPassword('student123');
+    setUsername('student');
+    setName('Student User');
+    toast.info('Student credentials filled. You can sign up or login now.');
+  };
+
   return (
     <div className="w-full max-w-md mx-auto animate-fade-in">
       <Card className="glass-panel">
@@ -206,9 +222,32 @@ const AuthForm = () => {
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex flex-col">
-          <p className="text-sm text-muted-foreground mt-2">
-            For testing, you can create a new account or use demo credentials that will be automatically inserted.
+        <CardFooter className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-2 w-full">
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Demo Credentials
+            </p>
+            <div className="flex gap-2 justify-between w-full">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fillAdminCredentials}
+                className="flex-1"
+              >
+                Admin Demo
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={fillStudentCredentials}
+                className="flex-1"
+              >
+                Student Demo
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Note: Use demo credentials to sign up with predefined roles
           </p>
         </CardFooter>
       </Card>
