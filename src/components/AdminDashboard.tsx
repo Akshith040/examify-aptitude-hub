@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -27,8 +26,15 @@ const AdminDashboard = () => {
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   
   useEffect(() => {
-    if (!currentUser.id || currentUser.role !== 'admin') {
+    console.log("Admin dashboard mounted. Current user role:", currentUser.role);
+    
+    if (!currentUser.id) {
       navigate('/');
+    } else if (currentUser.role !== 'admin') {
+      // If non-admin is trying to access admin dashboard, redirect to student dashboard
+      console.log("Non-admin user attempting to access admin dashboard. Redirecting...");
+      navigate('/student/dashboard');
+      toast.error('You do not have permission to access the admin dashboard');
     } else {
       fetchData();
     }

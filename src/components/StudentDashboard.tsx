@@ -16,10 +16,13 @@ const StudentDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
   
-  // If not logged in, redirect to login
+  // If not logged in or is admin, redirect appropriately
   useEffect(() => {
     if (!currentUser.id) {
       navigate('/');
+    } else if (currentUser.role === 'admin') {
+      // If admin is trying to access student dashboard, redirect to admin dashboard
+      navigate('/admin/dashboard');
     } else {
       fetchTestResults();
     }

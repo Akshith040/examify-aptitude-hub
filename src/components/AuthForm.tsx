@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,8 @@ const AuthForm = () => {
         // Determine role directly from user metadata
         const userRole = data.user.user_metadata.role || 'student';
         
+        console.log("Login successful. User role:", userRole);
+        
         // Store user data in local storage 
         localStorage.setItem('currentUser', JSON.stringify({
           id: data.user.id,
@@ -83,6 +86,10 @@ const AuthForm = () => {
     setIsLoading(true);
     
     try {
+      // Determine role based on email address
+      const role = email.includes('admin') ? 'admin' : 'student';
+      console.log(`Signing up user with role: ${role} based on email: ${email}`);
+      
       // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -91,7 +98,7 @@ const AuthForm = () => {
           data: {
             username,
             name,
-            role: email.includes('admin') ? 'admin' : 'student'
+            role
           }
         }
       });
