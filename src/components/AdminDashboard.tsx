@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,15 +31,20 @@ const AdminDashboard = () => {
     
     if (!currentUser.id) {
       navigate('/');
-    } else if (currentUser.role !== 'admin') {
+      return;
+    } 
+    
+    if (currentUser.role !== 'admin') {
       // If non-admin is trying to access admin dashboard, redirect to student dashboard
       console.log("Non-admin user attempting to access admin dashboard. Redirecting...");
-      navigate('/student/dashboard');
       toast.error('You do not have permission to access the admin dashboard');
-    } else {
-      fetchData();
+      navigate('/student/dashboard');
+      return;
     }
-  }, [currentUser, navigate]);
+    
+    // Only fetch data if user is admin
+    fetchData();
+  }, [currentUser.id, currentUser.role, navigate]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -141,6 +147,11 @@ const AdminDashboard = () => {
     navigate('/');
     toast.info('Logged out successfully');
   };
+  
+  // If the user is not admin, don't show the dashboard content
+  if (currentUser.role !== 'admin') {
+    return null; // Will be redirected by the useEffect
+  }
   
   return (
     <div className="container mx-auto py-6 px-4 sm:px-6 animate-fade-in">

@@ -137,6 +137,21 @@ const AuthForm = () => {
     toast.info('Student credentials filled. You can sign up or login now.');
   };
 
+  // Create demo admin directly in localStorage for testing
+  const useAdminDemo = () => {
+    // Set mock admin data directly in localStorage to bypass Supabase authentication
+    localStorage.setItem('currentUser', JSON.stringify({
+      id: 'demo-admin-id',
+      username: 'demoadmin',
+      email: 'admin@examify.com',
+      role: 'admin',
+      name: 'Demo Admin'
+    }));
+    
+    toast.success('Logged in as Demo Admin');
+    navigate('/admin/dashboard');
+  };
+
   return (
     <div className="w-full max-w-md mx-auto animate-fade-in">
       <Card className="glass-panel">
@@ -270,9 +285,17 @@ const AuthForm = () => {
                 Student Demo
               </Button>
             </div>
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={useAdminDemo}
+              className="w-full mt-2"
+            >
+              Direct Admin Access (Bypass Login)
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Note: Use demo credentials to sign up with predefined roles
+            Note: Use demo credentials to sign up with predefined roles or click Direct Admin Access to bypass login
           </p>
         </CardFooter>
       </Card>
