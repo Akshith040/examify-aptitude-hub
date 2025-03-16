@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -51,28 +50,22 @@ const AuthForm = () => {
       }
       
       if (data.user) {
-        // Get user profile to determine role
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (profileError) throw profileError;
+        // Determine role directly from user metadata
+        const userRole = data.user.user_metadata.role || 'student';
         
         // Store user data in local storage 
         localStorage.setItem('currentUser', JSON.stringify({
           id: data.user.id,
           username: data.user.user_metadata.username || email.split('@')[0],
           email: data.user.email,
-          role: profileData.role,
+          role: userRole,
           name: data.user.user_metadata.name || ''
         }));
         
         toast.success('Login successful');
         
         // Redirect based on role
-        if (profileData.role === 'admin') {
+        if (userRole === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/student/dashboard');
