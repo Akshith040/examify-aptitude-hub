@@ -12,6 +12,7 @@ import QuestionsTab from './admin/QuestionsTab';
 import StudentsTab from './admin/StudentsTab';
 import ResultsTab from './admin/ResultsTab';
 import ScheduleTab from './admin/ScheduleTab';
+import { seedSupabase } from '@/utils/seedSupabase';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('questions');
@@ -21,6 +22,7 @@ const AdminDashboard = () => {
   const [scheduledTests, setScheduledTests] = useState<ScheduledTest[]>([]);
   const [topics, setTopics] = useState<string[]>(['Mathematics', 'Science', 'English', 'History', 'Geography', 'General Knowledge']);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSeedingQuestions, setIsSeedingQuestions] = useState(false);
   
   const navigate = useNavigate();
   
@@ -117,6 +119,25 @@ const AdminDashboard = () => {
     }
   };
   
+  const handleSeedQuestions = async () => {
+    setIsSeedingQuestions(true);
+    try {
+      const result = await seedSupabase();
+      if (result.success) {
+        toast.success('Sample questions added to the database successfully!');
+        // Reload questions
+        fetchData();
+      } else {
+        toast.error(`Error adding sample questions: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error seeding database:', error);
+      toast.error('Failed to add sample questions');
+    } finally {
+      setIsSeedingQuestions(false);
+    }
+  };
+  
   const handleScheduleTest = (test: Omit<ScheduledTest, 'id'>) => {
     const newTest: ScheduledTest = {
       ...test,
@@ -157,7 +178,16 @@ const AdminDashboard = () => {
     <div className="container mx-auto py-6 px-4 sm:px-6 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-medium">Admin Dashboard</h1>
-        <Button variant="outline" onClick={logout}>Logout</Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleSeedQuestions} 
+            disabled={isSeedingQuestions}
+          >
+            {isSeedingQuestions ? 'Adding Questions...' : 'Add Sample Questions'}
+          </Button>
+          <Button variant="outline" onClick={logout}>Logout</Button>
+        </div>
       </div>
       
       <DashboardStats 
