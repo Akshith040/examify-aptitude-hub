@@ -270,8 +270,8 @@ export const seedSupabase = async () => {
     
     if (questionError) throw questionError;
     
-    // Fix the TypeScript error by checking if questionData exists before accessing length
-    console.log('Successfully added questions:', questionData ? questionData.length : 'unknown count');
+    // Fix the TypeScript error by properly handling the questionData type
+    console.log('Successfully added questions:', Array.isArray(questionData) ? questionData.length : 'unknown count');
     
     return { success: true, message: 'Sample questions added successfully!' };
   } catch (error) {
