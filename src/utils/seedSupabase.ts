@@ -255,7 +255,7 @@ export const seedSupabase = async () => {
     allQuestions.push(...expandedQuestions);
     
     // Insert questions
-    const { data: questionData, error: questionError } = await supabase
+    const { data, error: questionError } = await supabase
       .from('questions')
       .upsert(
         allQuestions.map(q => ({
@@ -271,8 +271,8 @@ export const seedSupabase = async () => {
     if (questionError) throw questionError;
     
     // Fix the TypeScript error by properly handling the type
-    const questionCount = questionData ? 
-      (Array.isArray(questionData) ? questionData.length : 0) : 
+    const questionCount = data ? 
+      (Array.isArray(data) ? data.length : 0) : 
       0;
     
     console.log('Successfully added questions:', questionCount);

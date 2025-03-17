@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { mockUsers, mockQuestions, mockTestResults } from '@/mock/data';
+import { mockUsers, mockTestResults } from '@/mock/data';
 import { User, Question, TestResult, ScheduledTest, SupabaseQuestion } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardStats from './admin/DashboardStats';
@@ -49,11 +49,18 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      console.log('Fetching questions from Supabase...');
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select('*');
       
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        console.error('Error fetching questions:', questionsError);
+        throw questionsError;
+      }
+      
+      console.log('Questions data received:', questionsData);
+      
       if (questionsData) {
         const formattedQuestions: Question[] = questionsData.map((q: SupabaseQuestion) => ({
           id: q.id,
@@ -67,6 +74,8 @@ const AdminDashboard = () => {
           explanation: q.explanation || undefined,
           topic: q.topic || undefined
         }));
+        
+        console.log('Formatted questions:', formattedQuestions);
         setQuestions(formattedQuestions);
         
         const allTopics = formattedQuestions
@@ -111,7 +120,7 @@ const AdminDashboard = () => {
       
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
+      toast.error('Failed to load data: ' + (error.message || 'Unknown error'));
     } finally {
       setIsLoading(false);
     }
@@ -178,12 +187,16 @@ const AdminDashboard = () => {
         </TabsList>
         
         <TabsContent value="questions">
-          <QuestionsTab 
-            questions={questions} 
-            setQuestions={setQuestions}
-            topics={topics}
-            setTopics={setTopics}
-          />
+          {isLoading ? (
+            <div className="py-10 text-center text-muted-foreground">Loading questions...</div>
+          ) : (
+            <QuestionsTab 
+              questions={questions} 
+              setQuestions={setQuestions}
+              topics={topics}
+              setTopics={setTopics}
+            />
+          )}
         </TabsContent>
         
         <TabsContent value="students">

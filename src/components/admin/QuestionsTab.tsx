@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -59,23 +58,25 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
           explanation: newQuestion.explanation,
           topic: newQuestion.topic
         })
-        .select()
-        .single();
+        .select();
         
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
       
-      if (data) {
+      if (data && data.length > 0) {
         const newQ: Question = {
-          id: data.id,
-          text: data.text,
-          options: Array.isArray(data.options) 
-            ? data.options 
-            : (typeof data.options === 'string' 
-                ? JSON.parse(data.options) 
-                : Object.values(data.options).map(val => String(val))),
-          correctOption: data.correct_option,
-          explanation: data.explanation || undefined,
-          topic: data.topic || undefined
+          id: data[0].id,
+          text: data[0].text,
+          options: Array.isArray(data[0].options) 
+            ? data[0].options 
+            : (typeof data[0].options === 'string' 
+                ? JSON.parse(data[0].options) 
+                : Object.values(data[0].options).map(val => String(val))),
+          correctOption: data[0].correct_option,
+          explanation: data[0].explanation || undefined,
+          topic: data[0].topic || undefined
         };
         
         setQuestions(prev => [...prev, newQ]);
@@ -93,10 +94,12 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
         });
         
         toast.success('Question added successfully');
+      } else {
+        toast.error('No data returned from the database');
       }
     } catch (error) {
       console.error('Error adding question:', error);
-      toast.error('Failed to add question');
+      toast.error('Failed to add question: ' + (error.message || 'Unknown error'));
     }
   };
   
