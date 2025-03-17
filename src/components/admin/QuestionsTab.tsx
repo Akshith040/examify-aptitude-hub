@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Question, SupabaseQuestion } from '@/types';
 import { FileSpreadsheetIcon, PlusIcon, Trash2Icon } from 'lucide-react';
@@ -32,7 +34,10 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
     topic: ''
   });
   
-  const handleQuestionChange = (field: string, value: string) => {
+  const [newTopicDialogOpen, setNewTopicDialogOpen] = useState(false);
+  const [newTopicName, setNewTopicName] = useState('');
+  
+  const handleQuestionChange = (field: string, value: string | number) => {
     setNewQuestion(prev => ({ ...prev, [field]: value }));
   };
   
@@ -49,12 +54,17 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
     }
     
     try {
+      // Ensure correctOption is a number
+      const correctOptionNumber = typeof newQuestion.correctOption === 'string' 
+        ? parseInt(newQuestion.correctOption, 10) 
+        : newQuestion.correctOption;
+      
       const { data, error } = await supabase
         .from('questions')
         .insert({
           text: newQuestion.text,
           options: newQuestion.options,
-          correct_option: newQuestion.correctOption,
+          correct_option: correctOptionNumber,
           explanation: newQuestion.explanation,
           topic: newQuestion.topic
         })
@@ -81,8 +91,8 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
         
         setQuestions(prev => [...prev, newQ]);
         
-        if (newQuestion.topic && !topics.includes(newQuestion.topic)) {
-          setTopics(prev => [...prev, newQuestion.topic!]);
+        if (newQuestion.topic && !topics.includes(newQuestion.topic as string)) {
+          setTopics(prev => [...prev, newQuestion.topic as string]);
         }
         
         setNewQuestion({
@@ -169,6 +179,23 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
     }
   };
   
+  const handleAddNewTopic = () => {
+    if (!newTopicName.trim()) {
+      toast.error('Please enter a topic name');
+      return;
+    }
+    
+    if (topics.includes(newTopicName.trim())) {
+      toast.error('This topic already exists');
+      return;
+    }
+    
+    setTopics(prev => [...prev, newTopicName.trim()]);
+    setNewTopicName('');
+    setNewTopicDialogOpen(false);
+    toast.success(`Topic "${newTopicName.trim()}" added successfully`);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between">
@@ -225,7 +252,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                           <input
                             type="radio"
                             checked={newQuestion.correctOption === i}
-                            onChange={() => handleQuestionChange('correctOption', i.toString())}
+                            onChange={() => handleQuestionChange('correctOption', i)}
                           />
                           <span>Correct</span>
                         </Label>
@@ -235,13 +262,32 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="topic">Topic</Label>
-                  <Input
-                    id="topic"
-                    value={newQuestion.topic || ''}
-                    onChange={(e) => handleQuestionChange('topic', e.target.value)}
-                    placeholder="Enter topic (e.g., Mathematics, Science)"
-                  />
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="topic">Topic</Label>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setNewTopicDialogOpen(true)}
+                    >
+                      Add New Topic
+                    </Button>
+                  </div>
+                  <Select
+                    value={newQuestion.topic as string || ''}
+                    onValueChange={value => handleQuestionChange('topic', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a topic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {topics.map(topic => (
+                        <SelectItem key={topic} value={topic}>
+                          {topic}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <div className="space-y-2">
@@ -260,6 +306,33 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
           </Dialog>
         </div>
       </div>
+      
+      <Dialog open={newTopicDialogOpen} onOpenChange={setNewTopicDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Topic</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newTopic">Topic Name</Label>
+              <Input
+                id="newTopic"
+                value={newTopicName}
+                onChange={(e) => setNewTopicName(e.target.value)}
+                placeholder="Enter new topic name"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setNewTopicDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddNewTopic}>
+                Add Topic
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <div className="rounded-md border">
         <div className="relative w-full overflow-auto">

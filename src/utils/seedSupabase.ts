@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { mockQuestions } from '@/mock/data';
 
@@ -238,8 +237,7 @@ export const seedSupabase = async () => {
       }
     ];
     
-    // Generate additional questions for each topic to reach about 25-30 per topic
-    const questionsToGenerate = 25; // Number of questions per topic
+    // Add original mockQuestions and the expanded questions
     const allQuestions = [];
     
     // Add original mockQuestions and the expanded questions
