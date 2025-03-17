@@ -1,17 +1,13 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Question, SupabaseQuestion } from '@/types';
-import { FileSpreadsheetIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import QuestionUploader from './QuestionUploader';
+import QuestionsList from './questions/QuestionsList';
+import AddQuestionDialog from './questions/AddQuestionDialog';
+import CSVUploaderDialog from './questions/CSVUploaderDialog';
+import AddTopicDialog from './questions/AddTopicDialog';
 
 interface QuestionsTabProps {
   questions: Question[];
@@ -35,7 +31,6 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
   });
   
   const [newTopicDialogOpen, setNewTopicDialogOpen] = useState(false);
-  const [newTopicName, setNewTopicName] = useState('');
   
   const handleQuestionChange = (field: string, value: string | number) => {
     setNewQuestion(prev => ({ ...prev, [field]: value }));
@@ -179,21 +174,10 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
     }
   };
   
-  const handleAddNewTopic = () => {
-    if (!newTopicName.trim()) {
-      toast.error('Please enter a topic name');
-      return;
+  const handleAddNewTopic = (topic: string) => {
+    if (topic) {
+      setTopics(prev => [...prev, topic]);
     }
-    
-    if (topics.includes(newTopicName.trim())) {
-      toast.error('This topic already exists');
-      return;
-    }
-    
-    setTopics(prev => [...prev, newTopicName.trim()]);
-    setNewTopicName('');
-    setNewTopicDialogOpen(false);
-    toast.success(`Topic "${newTopicName.trim()}" added successfully`);
   };
   
   return (
@@ -201,185 +185,29 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
       <div className="flex justify-between">
         <h2 className="text-xl font-medium">Manage Questions</h2>
         <div className="flex space-x-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-8 gap-1">
-                <FileSpreadsheetIcon className="h-4 w-4" />
-                Import CSV
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Import Questions from CSV</DialogTitle>
-              </DialogHeader>
-              <QuestionUploader onQuestionsUploaded={handleBulkUpload} />
-            </DialogContent>
-          </Dialog>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-8 gap-1">
-                <PlusIcon className="h-4 w-4" />
-                Add Question
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Question</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="question">Question</Label>
-                  <Textarea
-                    id="question"
-                    value={newQuestion.text}
-                    onChange={(e) => handleQuestionChange('text', e.target.value)}
-                    placeholder="Enter question text"
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <Label>Options</Label>
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className="flex gap-2">
-                      <Input
-                        value={newQuestion.options?.[i] || ''}
-                        onChange={(e) => handleOptionChange(i, e.target.value)}
-                        placeholder={`Option ${i + 1}`}
-                      />
-                      <div className="w-20">
-                        <Label className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            checked={newQuestion.correctOption === i}
-                            onChange={() => handleQuestionChange('correctOption', i)}
-                          />
-                          <span>Correct</span>
-                        </Label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label htmlFor="topic">Topic</Label>
-                    <Button 
-                      type="button" 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setNewTopicDialogOpen(true)}
-                    >
-                      Add New Topic
-                    </Button>
-                  </div>
-                  <Select
-                    value={newQuestion.topic as string || ''}
-                    onValueChange={value => handleQuestionChange('topic', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a topic" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {topics.map(topic => (
-                        <SelectItem key={topic} value={topic}>
-                          {topic}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="explanation">Explanation (Optional)</Label>
-                  <Textarea
-                    id="explanation"
-                    value={newQuestion.explanation || ''}
-                    onChange={(e) => handleQuestionChange('explanation', e.target.value)}
-                    placeholder="Explanation for the correct answer"
-                  />
-                </div>
-                
-                <Button onClick={addQuestion}>Add Question</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <CSVUploaderDialog onQuestionsUploaded={handleBulkUpload} />
+          <AddQuestionDialog
+            newQuestion={newQuestion}
+            topics={topics}
+            onQuestionChange={handleQuestionChange}
+            onOptionChange={handleOptionChange}
+            onAddQuestion={addQuestion}
+            onOpenNewTopicDialog={() => setNewTopicDialogOpen(true)}
+          />
         </div>
       </div>
       
-      <Dialog open={newTopicDialogOpen} onOpenChange={setNewTopicDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Topic</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="newTopic">Topic Name</Label>
-              <Input
-                id="newTopic"
-                value={newTopicName}
-                onChange={(e) => setNewTopicName(e.target.value)}
-                placeholder="Enter new topic name"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setNewTopicDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddNewTopic}>
-                Add Topic
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddTopicDialog
+        open={newTopicDialogOpen}
+        onOpenChange={setNewTopicDialogOpen}
+        topics={topics}
+        onAddTopic={handleAddNewTopic}
+      />
       
-      <div className="rounded-md border">
-        <div className="relative w-full overflow-auto">
-          <table className="w-full caption-bottom text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="h-10 px-4 text-left font-medium">ID</th>
-                <th className="h-10 px-4 text-left font-medium">Question</th>
-                <th className="h-10 px-4 text-left font-medium">Topic</th>
-                <th className="h-10 px-4 text-left font-medium">Correct Option</th>
-                <th className="h-10 px-4 text-left font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {questions.map((question) => (
-                <tr key={question.id} className="border-b">
-                  <td className="p-2 align-middle">{question.id.slice(0, 8)}</td>
-                  <td className="p-2 align-middle">
-                    {question.text.length > 50
-                      ? `${question.text.slice(0, 50)}...`
-                      : question.text}
-                  </td>
-                  <td className="p-2 align-middle">{question.topic || 'N/A'}</td>
-                  <td className="p-2 align-middle">Option {question.correctOption + 1}</td>
-                  <td className="p-2 align-middle">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteQuestion(question.id)}
-                      className="h-8 w-8 text-destructive"
-                    >
-                      <Trash2Icon className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {questions.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="py-6 text-center text-muted-foreground">
-                    No questions added yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <QuestionsList
+        questions={questions}
+        onDeleteQuestion={deleteQuestion}
+      />
     </div>
   );
 };
