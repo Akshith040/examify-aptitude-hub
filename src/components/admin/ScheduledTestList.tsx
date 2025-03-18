@@ -8,7 +8,6 @@ import { ScheduledTest } from '@/types';
 import { Trash2Icon, FileTextIcon, LinkIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ScheduledTestListProps {
   tests: ScheduledTest[];
@@ -30,48 +29,13 @@ const ScheduledTestList: React.FC<ScheduledTestListProps> = ({
       .catch(() => toast.error('Failed to copy test link'));
   };
 
-  const handleToggleTestStatus = async (id: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('scheduled_tests')
-        .update({ is_active: isActive })
-        .eq('id', id);
-        
-      if (error) {
-        console.error('Error updating test status:', error);
-        toast.error('Failed to update test status');
-        return;
-      }
-      
-      onToggleTestStatus(id, isActive);
-      toast.success(`Test ${isActive ? 'activated' : 'deactivated'} successfully`);
-    } catch (error) {
-      console.error('Error toggling test status:', error);
-      toast.error('Failed to update test status');
-    }
+  const handleToggleTestStatus = (id: string, isActive: boolean) => {
+    onToggleTestStatus(id, isActive);
   };
   
-  const handleDeleteTest = async (id: string) => {
+  const handleDeleteTest = (id: string) => {
     if (!confirm('Are you sure you want to delete this test?')) return;
-    
-    try {
-      const { error } = await supabase
-        .from('scheduled_tests')
-        .delete()
-        .eq('id', id);
-        
-      if (error) {
-        console.error('Error deleting test:', error);
-        toast.error('Failed to delete test');
-        return;
-      }
-      
-      onDeleteTest(id);
-      toast.success('Test deleted successfully');
-    } catch (error) {
-      console.error('Error deleting test:', error);
-      toast.error('Failed to delete test');
-    }
+    onDeleteTest(id);
   };
   
   if (tests.length === 0) {

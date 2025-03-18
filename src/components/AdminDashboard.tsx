@@ -165,6 +165,8 @@ const AdminDashboard = () => {
   
   const handleScheduleTest = async (test: Omit<ScheduledTest, 'id'>) => {
     try {
+      console.log('Scheduling test with data:', test);
+      
       const { data, error } = await supabase
         .from('scheduled_tests')
         .insert({
@@ -177,26 +179,31 @@ const AdminDashboard = () => {
           topics: test.topics,
           is_active: true
         })
-        .select()
-        .single();
-        
+        .select();
+      
       if (error) {
         console.error('Error scheduling test:', error);
-        toast.error('Failed to schedule test');
+        toast.error('Failed to schedule test: ' + error.message);
+        return;
+      }
+      
+      if (!data || data.length === 0) {
+        console.error('No data returned from insert operation');
+        toast.error('Failed to schedule test: No data returned');
         return;
       }
       
       const newTest: ScheduledTest = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        startDate: data.start_date,
-        endDate: data.end_date,
-        duration: data.duration,
-        topics: data.topics,
-        questionCount: data.question_count,
-        isActive: data.is_active,
-        createdAt: data.created_at
+        id: data[0].id,
+        title: data[0].title,
+        description: data[0].description,
+        startDate: data[0].start_date,
+        endDate: data[0].end_date,
+        duration: data[0].duration,
+        topics: data[0].topics,
+        questionCount: data[0].question_count,
+        isActive: data[0].is_active,
+        createdAt: data[0].created_at
       };
       
       setScheduledTests(prev => [newTest, ...prev]);

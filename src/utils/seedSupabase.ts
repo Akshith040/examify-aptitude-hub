@@ -1,281 +1,342 @@
-import { supabase } from '@/integrations/supabase/client';
-import { mockQuestions } from '@/mock/data';
+import { faker } from '@faker-js/faker';
+import { createClient } from '@supabase/supabase-js';
+import { Database } from '../integrations/supabase/types';
+import 'dotenv/config';
 
-/**
- * Seeds the Supabase database with mock data
- * Run this function from a button click or in development
- */
-export const seedSupabase = async () => {
-  try {
-    console.log('Starting to seed Supabase...');
-    
-    // Common question topics
-    const topics = ['Mathematics', 'Science', 'English', 'History', 'Geography', 'General Knowledge'];
-    
-    // Create expanded set of sample questions for each topic
-    const expandedQuestions = [
-      // Mathematics questions
-      {
-        text: 'Solve for x: 3x + 7 = 22',
-        options: ['x = 5', 'x = 7', 'x = 8', 'x = 15'],
-        correct_option: 0,
-        explanation: 'Subtract 7 from both sides: 3x = 15, then divide by 3: x = 5',
-        topic: 'Mathematics'
-      },
-      {
-        text: 'If f(x) = 2x² - 3x + 1, what is f(2)?',
-        options: ['3', '5', '7', '9'],
-        correct_option: 1,
-        explanation: 'f(2) = 2(2)² - 3(2) + 1 = 2(4) - 6 + 1 = 8 - 6 + 1 = 3',
-        topic: 'Mathematics'
-      },
-      {
-        text: 'What is the slope of the line passing through points (3, 5) and (7, 9)?',
-        options: ['0.5', '1', '2', '4'],
-        correct_option: 1,
-        explanation: 'Slope = (y₂ - y₁)/(x₂ - x₁) = (9 - 5)/(7 - 3) = 4/4 = 1',
-        topic: 'Mathematics'
-      },
-      {
-        text: 'What is the area of a circle with radius 6 cm?',
-        options: ['12π cm²', '36π cm²', '18π cm²', '24π cm²'],
-        correct_option: 1,
-        explanation: 'Area of a circle = πr² = π(6)² = 36π cm²',
-        topic: 'Mathematics'
-      },
-      {
-        text: 'What is the volume of a cube with side length 4 units?',
-        options: ['16 units³', '32 units³', '64 units³', '128 units³'],
-        correct_option: 2,
-        explanation: 'Volume of a cube = s³ = 4³ = 64 units³',
-        topic: 'Mathematics'
-      },
-      
-      // Science questions
-      {
-        text: 'Which of the following is NOT a type of electromagnetic radiation?',
-        options: ['X-rays', 'Microwaves', 'Sound waves', 'Gamma rays'],
-        correct_option: 2,
-        explanation: 'Sound waves are mechanical waves that require a medium to travel, not electromagnetic waves',
-        topic: 'Science'
-      },
-      {
-        text: 'What is the chemical symbol for gold?',
-        options: ['Go', 'Gl', 'Au', 'Ag'],
-        correct_option: 2,
-        explanation: 'The chemical symbol for gold is Au, from its Latin name "aurum"',
-        topic: 'Science'
-      },
-      {
-        text: 'Which planet has the Great Red Spot?',
-        options: ['Mars', 'Jupiter', 'Venus', 'Saturn'],
-        correct_option: 1,
-        explanation: 'The Great Red Spot is a persistent high-pressure region in Jupiter\'s atmosphere',
-        topic: 'Science'
-      },
-      {
-        text: 'What is the powerhouse of the cell?',
-        options: ['Nucleus', 'Ribosome', 'Mitochondria', 'Golgi apparatus'],
-        correct_option: 2,
-        explanation: 'Mitochondria are organelles that generate most of the cell\'s supply of ATP, used as a source of energy',
-        topic: 'Science'
-      },
-      {
-        text: 'What is the pH of a neutral solution?',
-        options: ['0', '7', '10', '14'],
-        correct_option: 1,
-        explanation: 'A neutral solution has a pH of 7, with acids below 7 and bases above 7',
-        topic: 'Science'
-      },
-      
-      // English questions
-      {
-        text: 'Which of the following is a proper noun?',
-        options: ['City', 'Happiness', 'London', 'Beautiful'],
-        correct_option: 2,
-        explanation: 'London is a proper noun because it names a specific city',
-        topic: 'English'
-      },
-      {
-        text: 'What is the past tense of "swim"?',
-        options: ['Swam', 'Swimmed', 'Swimming', 'Swum'],
-        correct_option: 0,
-        explanation: 'The past tense of "swim" is "swam". "Swum" is the past participle',
-        topic: 'English'
-      },
-      {
-        text: 'Who wrote "Romeo and Juliet"?',
-        options: ['Charles Dickens', 'William Shakespeare', 'Jane Austen', 'Mark Twain'],
-        correct_option: 1,
-        explanation: 'William Shakespeare wrote the tragedy "Romeo and Juliet" around 1595',
-        topic: 'English'
-      },
-      {
-        text: 'What literary device involves giving human qualities to non-human things?',
-        options: ['Metaphor', 'Simile', 'Personification', 'Alliteration'],
-        correct_option: 2,
-        explanation: 'Personification is the attribution of human characteristics to something non-human',
-        topic: 'English'
-      },
-      {
-        text: 'What is the term for a comparison using "like" or "as"?',
-        options: ['Metaphor', 'Simile', 'Personification', 'Hyperbole'],
-        correct_option: 1,
-        explanation: 'A simile makes a comparison using "like" or "as," such as "brave as a lion" or "eyes like stars"',
-        topic: 'English'
-      },
-      
-      // History questions
-      {
-        text: 'Which event marked the beginning of World War I?',
-        options: ['The attack on Pearl Harbor', 'The assassination of Archduke Franz Ferdinand', 'The fall of the Berlin Wall', 'The bombing of Hiroshima'],
-        correct_option: 1,
-        explanation: 'World War I began after the assassination of Archduke Franz Ferdinand of Austria in June 1914',
-        topic: 'History'
-      },
-      {
-        text: 'Who was the first President of the United States?',
-        options: ['Thomas Jefferson', 'Abraham Lincoln', 'George Washington', 'John Adams'],
-        correct_option: 2,
-        explanation: 'George Washington served as the first President of the United States from 1789 to 1797',
-        topic: 'History'
-      },
-      {
-        text: 'The French Revolution began in what year?',
-        options: ['1776', '1789', '1804', '1812'],
-        correct_option: 1,
-        explanation: 'The French Revolution began in 1789 with the storming of the Bastille',
-        topic: 'History'
-      },
-      {
-        text: 'Which amendment to the U.S. Constitution abolished slavery?',
-        options: ['10th Amendment', '13th Amendment', '15th Amendment', '19th Amendment'],
-        correct_option: 1,
-        explanation: 'The 13th Amendment, ratified in 1865, abolished slavery in the United States',
-        topic: 'History'
-      },
-      {
-        text: 'What was the name of the 1803 land deal in which the United States purchased territory from France?',
-        options: ['Gadsden Purchase', 'Louisiana Purchase', 'Missouri Compromise', 'Treaty of Paris'],
-        correct_option: 1,
-        explanation: 'In the Louisiana Purchase, the United States bought about 828,000 square miles of territory from France for $15 million',
-        topic: 'History'
-      },
-      
-      // Geography questions
-      {
-        text: 'What is the longest river in the world?',
-        options: ['Amazon River', 'Nile River', 'Mississippi River', 'Yangtze River'],
-        correct_option: 1,
-        explanation: 'The Nile River in Africa is the longest river in the world at approximately 6,650 kilometers (4,130 miles)',
-        topic: 'Geography'
-      },
-      {
-        text: 'Which ocean is the largest?',
-        options: ['Atlantic Ocean', 'Indian Ocean', 'Arctic Ocean', 'Pacific Ocean'],
-        correct_option: 3,
-        explanation: 'The Pacific Ocean is the largest and deepest ocean on Earth, covering about one-third of the Earth\'s surface',
-        topic: 'Geography'
-      },
-      {
-        text: 'What is the capital of Japan?',
-        options: ['Seoul', 'Beijing', 'Tokyo', 'Bangkok'],
-        correct_option: 2,
-        explanation: 'Tokyo is the capital and largest city of Japan',
-        topic: 'Geography'
-      },
-      {
-        text: 'Which of these is the smallest continent by land area?',
-        options: ['Africa', 'Europe', 'Australia', 'South America'],
-        correct_option: 2,
-        explanation: 'Australia is the smallest continent by land area, covering about 5.3 million square miles',
-        topic: 'Geography'
-      },
-      {
-        text: 'What causes the seasons on Earth?',
-        options: ['The Earth\'s rotation on its axis', 'The Earth\'s distance from the Sun', 'The Earth\'s tilt on its axis', 'The Moon\'s gravity'],
-        correct_option: 2,
-        explanation: 'The seasons are caused by the Earth\'s axial tilt as it orbits the Sun, not by the Earth\'s distance from the Sun',
-        topic: 'Geography'
-      },
-      
-      // General Knowledge questions
-      {
-        text: 'Who painted the Mona Lisa?',
-        options: ['Vincent van Gogh', 'Leonardo da Vinci', 'Pablo Picasso', 'Michelangelo'],
-        correct_option: 1,
-        explanation: 'The Mona Lisa was painted by Leonardo da Vinci in the early 16th century',
-        topic: 'General Knowledge'
-      },
-      {
-        text: 'Which planet is known as the "Red Planet"?',
-        options: ['Venus', 'Jupiter', 'Mars', 'Saturn'],
-        correct_option: 2,
-        explanation: 'Mars is known as the "Red Planet" due to the reddish appearance caused by iron oxide (rust) on its surface',
-        topic: 'General Knowledge'
-      },
-      {
-        text: 'What is the chemical formula for water?',
-        options: ['CO2', 'H2O', 'CH4', 'O2'],
-        correct_option: 1,
-        explanation: 'The chemical formula for water is H2O, representing two hydrogen atoms and one oxygen atom',
-        topic: 'General Knowledge'
-      },
-      {
-        text: 'In what year did the Titanic sink?',
-        options: ['1905', '1912', '1920', '1931'],
-        correct_option: 1,
-        explanation: 'The Titanic sank on April 15, 1912, during its maiden voyage from Southampton to New York City',
-        topic: 'General Knowledge'
-      },
-      {
-        text: 'Which of the following is NOT a primary color of light?',
-        options: ['Red', 'Green', 'Yellow', 'Blue'],
-        correct_option: 2,
-        explanation: 'The primary colors of light are red, green, and blue (RGB). Yellow is a secondary color created by mixing red and green light',
-        topic: 'General Knowledge'
-      }
-    ];
-    
-    // Add original mockQuestions and the expanded questions
-    const allQuestions = [];
-    
-    // Add original mockQuestions and the expanded questions
-    allQuestions.push(...mockQuestions.map(q => ({
-      text: q.text,
-      options: q.options,
-      correct_option: q.correctOption,
-      explanation: q.explanation,
-      topic: q.topic || topics[Math.floor(Math.random() * topics.length)]
-    })));
-    
-    // Add expanded questions
-    allQuestions.push(...expandedQuestions);
-    
-    // Insert questions
-    const { data, error: questionError } = await supabase
+const supabaseUrl = process.env.SUPABASE_URL as string;
+const supabaseKey = process.env.SUPABASE_KEY as string;
+
+const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+
+async function seedQuestions(numberOfQuestions: number = 50) {
+  console.log(`Seeding ${numberOfQuestions} questions...`);
+
+  const topics = ['Mathematics', 'Science', 'English', 'History', 'Geography', 'General Knowledge'];
+
+  for (let i = 0; i < numberOfQuestions; i++) {
+    const questionText = faker.lorem.sentence();
+    const options = [faker.lorem.word(), faker.lorem.word(), faker.lorem.word(), faker.lorem.word()];
+    const correctOption = faker.number.int({ min: 0, max: 3 });
+    const explanation = faker.lorem.sentence();
+    const topic = faker.helpers.arrayElement(topics);
+
+    const { data, error } = await supabase
       .from('questions')
-      .upsert(
-        allQuestions.map(q => ({
-          id: q.id || undefined, // Allow Supabase to generate IDs for new questions
-          text: q.text,
-          options: q.options,
-          correct_option: q.correct_option,
-          explanation: q.explanation,
-          topic: q.topic
-        }))
-      );
-    
-    if (questionError) throw questionError;
-    
-    // Fix the TypeScript error by properly checking if data exists and is an array
-    const questionsCount = Array.isArray(data) ? data.length : 0;
-    
-    console.log('Successfully added questions:', questionsCount);
-    
-    return { success: true, message: 'Sample questions added successfully!' };
-  } catch (error) {
-    console.error('Error seeding Supabase:', error);
-    return { success: false, message: 'Error seeding data', error };
+      .insert([
+        {
+          text: questionText,
+          options: options,
+          correct_option: correctOption,
+          explanation: explanation,
+          topic: topic,
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error inserting question:', error);
+    } else {
+      console.log(`Inserted question ${i + 1}/${numberOfQuestions}`);
+    }
   }
-};
+
+  console.log('Questions seeding completed.');
+}
+
+async function seedUsers(numberOfUsers: number = 10) {
+  console.log(`Seeding ${numberOfUsers} users...`);
+
+  for (let i = 0; i < numberOfUsers; i++) {
+    const username = faker.internet.userName();
+    const password = faker.internet.password();
+    const email = faker.internet.email();
+    const name = faker.person.fullName();
+
+    const { data, error } = await supabase
+      .from('users')
+      .insert([
+        {
+          username: username,
+          password: password,
+          email: email,
+          name: name,
+          role: 'student',
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error inserting user:', error);
+    } else {
+      console.log(`Inserted user ${i + 1}/${numberOfUsers}`);
+    }
+  }
+
+  console.log('Users seeding completed.');
+}
+
+async function seedTestResults(numberOfResults: number = 20) {
+  console.log(`Seeding ${numberOfResults} test results...`);
+
+  // Fetch all users to assign test results to them
+  const { data: users, error: usersError } = await supabase.from('users').select('id');
+
+  if (usersError) {
+    console.error('Error fetching users:', usersError);
+    return;
+  }
+
+  if (!users || users.length === 0) {
+    console.warn('No users found, skipping test results seeding.');
+    return;
+  }
+
+  // Fetch all questions to generate answers
+  const { data: questions, error: questionsError } = await supabase.from('questions').select('id');
+
+  if (questionsError) {
+    console.error('Error fetching questions:', questionsError);
+    return;
+  }
+
+  if (!questions || questions.length === 0) {
+    console.warn('No questions found, skipping test results seeding.');
+    return;
+  }
+
+  for (let i = 0; i < numberOfResults; i++) {
+    const userId = faker.helpers.arrayElement(users).id;
+    const testDate = faker.date.past().toISOString();
+    const score = faker.number.int({ min: 0, max: 100 });
+    const totalQuestions = questions.length;
+    const timeSpent = faker.number.int({ min: 60, max: 3600 }); // Time spent in seconds
+
+    // Generate answers for each question
+    const answers = questions.map(question => ({
+      questionId: question.id,
+      selectedOption: faker.number.int({ min: 0, max: 3 }),
+      isCorrect: faker.datatype.boolean(),
+      timeSpent: faker.number.int({ min: 1, max: 30 }), // Time spent on each question in seconds
+    }));
+
+    const { data, error } = await supabase
+      .from('test_results')
+      .insert([
+        {
+          user_id: userId,
+          test_date: testDate,
+          score: score,
+          total_questions: totalQuestions,
+          time_spent: timeSpent,
+          answers: answers,
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error inserting test result:', error);
+    } else {
+      console.log(`Inserted test result ${i + 1}/${numberOfResults}`);
+    }
+  }
+
+  console.log('Test results seeding completed.');
+}
+
+async function seedScheduledTests(numberOfTests: number = 5) {
+  console.log(`Seeding ${numberOfTests} scheduled tests...`);
+
+  const topics = ['Mathematics', 'Science', 'English', 'History', 'Geography', 'General Knowledge'];
+
+  for (let i = 0; i < numberOfTests; i++) {
+    const title = faker.lorem.sentence();
+    const description = faker.lorem.paragraph();
+    const startDate = faker.date.future().toISOString();
+    const endDate = faker.date.future().toISOString();
+    const duration = faker.number.int({ min: 30, max: 120 });
+    const questionCount = faker.number.int({ min: 10, max: 50 });
+    const testTopics = faker.helpers.arrayElements(topics, faker.number.int({ min: 1, max: topics.length }));
+    const isActive = faker.datatype.boolean();
+
+    const { data, error } = await supabase
+      .from('scheduled_tests')
+      .insert([
+        {
+          title: title,
+          description: description,
+          start_date: startDate,
+          end_date: endDate,
+          duration: duration,
+          question_count: questionCount,
+          topics: testTopics,
+          is_active: isActive,
+        },
+      ])
+      .select();
+
+    if (error) {
+      console.error('Error inserting scheduled test:', error);
+    } else {
+      console.log(`Inserted scheduled test ${i + 1}/${numberOfTests}`);
+    }
+  }
+
+  console.log('Scheduled tests seeding completed.');
+}
+
+async function seedAdminUser() {
+  console.log('Seeding admin user...');
+
+  const username = 'admin';
+  const password = 'password'; // Please hash this in a real application
+  const email = 'admin@example.com';
+  const name = 'Administrator';
+
+  // Check if the admin user already exists
+  const { data: existingAdmin, error: existingAdminError } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username);
+
+  if (existingAdminError) {
+    console.error('Error checking for existing admin:', existingAdminError);
+    return;
+  }
+
+  if (existingAdmin && existingAdmin.length > 0) {
+    console.log('Admin user already exists, skipping creation.');
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert([
+      {
+        username: username,
+        password: password,
+        email: email,
+        name: name,
+        role: 'admin',
+      },
+    ])
+    .select();
+
+  if (error) {
+    console.error('Error inserting admin user:', error);
+  } else {
+    console.log('Admin user seeded successfully.');
+  }
+}
+
+async function seedAll() {
+  try {
+    await seedAdminUser();
+    await seedQuestions();
+    await seedUsers();
+    await seedTestResults();
+    await seedScheduledTests();
+    console.log('All seeding operations completed successfully.');
+  } catch (error) {
+    console.error('Error during seeding:', error);
+  }
+}
+
+// Function to seed scheduled tests with specific data
+async function seedSpecificScheduledTests() {
+  console.log('Seeding specific scheduled tests...');
+
+  const tests = [
+    {
+      title: 'Mathematics Exam - Algebra Basics',
+      description: 'Test your knowledge on basic algebra concepts.',
+      startDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), // 1 week from now
+      endDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), // 2 weeks from now
+      duration: 60,
+      questionCount: 25,
+      topics: ['Mathematics'],
+      isActive: true,
+    },
+    {
+      title: 'Science Quiz - Introduction to Biology',
+      description: 'A quiz covering the fundamental concepts of biology.',
+      startDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), // 10 days from now
+      endDate: new Date(new Date().setDate(new Date().getDate() + 17)).toISOString(), // 17 days from now
+      duration: 45,
+      questionCount: 20,
+      topics: ['Science'],
+      isActive: true,
+    },
+    {
+      title: 'English Literature - Understanding Shakespeare',
+      description: 'Explore the works of Shakespeare and test your comprehension.',
+      startDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), // 2 weeks from now
+      endDate: new Date(new Date().setDate(new Date().getDate() + 21)).toISOString(), // 3 weeks from now
+      duration: 75,
+      questionCount: 30,
+      topics: ['English'],
+      isActive: true,
+    },
+    {
+      title: 'History Test - World War II',
+      description: 'Test your knowledge of the major events and figures of World War II.',
+      startDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), // 3 days from now
+      endDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), // 10 days from now
+      duration: 90,
+      questionCount: 40,
+      topics: ['History'],
+      isActive: true,
+    },
+    {
+      title: 'Geography Challenge - Mapping the World',
+      description: 'A challenge to identify countries, capitals, and geographical landmarks.',
+      startDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), // 5 days from now
+      endDate: new Date(new Date().setDate(new Date().getDate() + 12)).toISOString(), // 12 days from now
+      duration: 50,
+      questionCount: 22,
+      topics: ['Geography'],
+      isActive: true,
+    },
+  ];
+
+  for (const test of tests) {
+    const { title, description, startDate, endDate, duration, questionCount, topics, isActive } = test;
+
+    const { data, error } = await supabase
+      .from('scheduled_tests')
+      .insert([
+        {
+          title: title,
+          description: description,
+          start_date: startDate,
+          end_date: endDate,
+          duration: duration,
+          question_count: questionCount,
+          topics: topics,
+          is_active: isActive,
+        },
+      ])
+      .select();
+
+      // Handle the data safely and check for null
+    const insertedId = data?.id;
+    if (!insertedId) {
+      console.error('Failed to insert scheduled test: No ID returned');
+      continue; // Skip this iteration if no ID was returned
+    }
+
+    if (error) {
+      console.error('Error inserting specific scheduled test:', error);
+    } else {
+      console.log(`Inserted specific scheduled test: ${title}`);
+    }
+  }
+
+  console.log('Specific scheduled tests seeding completed.');
+}
+
+
+// Only run the seeding functions if the script is run directly
+if (import.meta.path === process.argv[1]) {
+  seedAll().then(() => console.log('Seeding complete.'));
+  seedSpecificScheduledTests().then(() => console.log('Specific scheduled tests seeding complete.'));
+}
