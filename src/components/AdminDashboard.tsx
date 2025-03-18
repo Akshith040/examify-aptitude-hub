@@ -120,24 +120,36 @@ const AdminDashboard = () => {
         console.error('Error fetching test results:', resultsError);
         setTestResults(mockTestResults);
       } else if (resultsData) {
-        const formattedResults: TestResult[] = resultsData.map(result => ({
-          id: result.id,
-          userId: result.user_id,
-          userName: result.user_name || 'Student', // Using a default value since user_name might not exist
-          testDate: result.test_date,
-          score: result.score,
-          totalQuestions: result.total_questions,
-          timeSpent: result.time_spent,
-          answers: Array.isArray(result.answers) 
-            ? result.answers.map((answer: any) => ({
+        const formattedResults: TestResult[] = resultsData.map(result => {
+          // Properly parse and format the answers field to match TestResult interface
+          let formattedAnswers = [];
+          
+          try {
+            if (Array.isArray(result.answers)) {
+              formattedAnswers = result.answers.map((answer: any) => ({
                 questionId: answer.questionId || '',
                 selectedOption: typeof answer.selectedOption === 'number' ? answer.selectedOption : -1,
                 isCorrect: Boolean(answer.isCorrect),
                 timeSpent: typeof answer.timeSpent === 'number' ? answer.timeSpent : 0
-              }))
-            : [],
-          testId: result.test_id
-        }));
+              }));
+            }
+          } catch (e) {
+            console.error('Error parsing answers:', e, result.answers);
+            formattedAnswers = [];
+          }
+          
+          return {
+            id: result.id,
+            userId: result.user_id,
+            userName: result.user_name || 'Student', // Safely handle missing user_name field
+            testDate: result.test_date,
+            score: result.score,
+            totalQuestions: result.total_questions,
+            timeSpent: result.time_spent,
+            answers: formattedAnswers,
+            testId: result.test_id
+          };
+        });
         
         setTestResults(formattedResults);
       }

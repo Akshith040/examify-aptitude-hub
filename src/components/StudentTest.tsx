@@ -2,13 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Question, TestResult, QuestionStatus, SupabaseQuestion } from '@/types';
+import { Question, TestResult, QuestionStatus, SupabaseQuestion, ScheduledTest } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import TestStartPage from './test/TestStartPage';
 import TestQuestion from './test/TestQuestion';
 import TestResults from './test/TestResults';
 
-const StudentTest = () => {
+interface StudentTestProps {
+  testId?: string;
+  scheduledTest?: ScheduledTest | null;
+}
+
+const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
@@ -38,10 +43,20 @@ const StudentTest = () => {
   const fetchQuestions = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*')
-        .order('created_at', { ascending: false });
+      
+      // If we have a scheduled test with topics, filter questions by those topics
+      let query = supabase.from('questions').select('*');
+      
+      if (scheduledTest && Array.isArray(scheduledTest.topics) && scheduledTest.topics.length > 0) {
+        query = query.in('topic', scheduledTest.topics);
+      }
+      
+      // Limit to the number of questions in the scheduled test if available
+      if (scheduledTest && scheduledTest.questionCount) {
+        query = query.limit(scheduledTest.questionCount);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
       
@@ -183,11 +198,13 @@ const StudentTest = () => {
         .from('test_results')
         .insert({
           user_id: currentUser.id,
+          user_name: currentUser.name || currentUser.username, // Include user_name field
           score,
           total_questions: questions.length,
           time_spent: totalTestTime,
           answers,
-          test_date: new Date().toISOString()
+          test_date: new Date().toISOString(),
+          test_id: testId // Include test ID if available
         })
         .select('id')
         .single();

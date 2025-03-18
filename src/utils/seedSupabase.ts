@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { mockQuestions } from '@/mock/data';
 
@@ -270,9 +269,9 @@ export const seedSupabase = async () => {
     if (questionError) throw questionError;
     
     // Fix the TypeScript error by properly checking if data exists and is an array
-    const questionCount = Array.isArray(data) ? data.length : 0;
+    const questionsCount = Array.isArray(data) ? data.length : 0;
     
-    console.log('Successfully added questions:', questionCount);
+    console.log('Successfully added questions:', questionsCount);
     
     return { success: true, message: 'Sample questions added successfully!' };
   } catch (error) {

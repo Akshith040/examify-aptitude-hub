@@ -79,7 +79,7 @@ export interface SupabaseScheduledTest {
 export interface SupabaseTestResult {
   id: string;
   user_id: string;
-  user_name?: string;
+  user_name?: string; // Added as optional to match database schema
   test_date: string;
   score: number;
   total_questions: number;

@@ -127,6 +127,7 @@ const StudentTestPage = () => {
     );
   }
 
+  // Pass the correct props to StudentTest component
   return <StudentTest testId={testId || ""} scheduledTest={test} />;
 };
 
