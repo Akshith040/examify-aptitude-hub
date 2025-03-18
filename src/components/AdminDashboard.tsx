@@ -49,6 +49,7 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      // Fetch questions
       console.log('Fetching questions from Supabase...');
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
@@ -58,8 +59,6 @@ const AdminDashboard = () => {
         console.error('Error fetching questions:', questionsError);
         throw questionsError;
       }
-      
-      console.log('Questions data received:', questionsData);
       
       if (questionsData) {
         const formattedQuestions: Question[] = questionsData.map((q: SupabaseQuestion) => ({
@@ -75,7 +74,6 @@ const AdminDashboard = () => {
           topic: q.topic || undefined
         }));
         
-        console.log('Formatted questions:', formattedQuestions);
         setQuestions(formattedQuestions);
         
         const allTopics = formattedQuestions
@@ -87,36 +85,57 @@ const AdminDashboard = () => {
         }
       }
       
-      setUsers(mockUsers.filter(user => user.role === 'student'));
-      setTestResults(mockTestResults);
+      // Fetch scheduled tests
+      const { data: testsData, error: testsError } = await supabase
+        .from('scheduled_tests')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (testsError) {
+        console.error('Error fetching scheduled tests:', testsError);
+      } else if (testsData) {
+        const formattedTests: ScheduledTest[] = testsData.map(test => ({
+          id: test.id,
+          title: test.title,
+          description: test.description || undefined,
+          startDate: test.start_date,
+          endDate: test.end_date,
+          duration: test.duration,
+          topics: Array.isArray(test.topics) ? test.topics : [],
+          questionCount: test.question_count,
+          isActive: test.is_active,
+          createdAt: test.created_at
+        }));
+        
+        setScheduledTests(formattedTests);
+      }
       
-      const mockScheduledTests: ScheduledTest[] = [
-        {
-          id: '1',
-          title: 'Mid-term Assessment',
-          description: 'Comprehensive test covering all topics from Quarter 1',
-          startDate: new Date(Date.now() + 86400000).toISOString(),
-          endDate: new Date(Date.now() + 86400000 * 5).toISOString(),
-          duration: 90,
-          topics: ['Mathematics', 'Science'],
-          questionCount: 20,
-          isActive: true,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: '2',
-          title: 'Final Exam',
-          description: 'Year-end comprehensive assessment',
-          startDate: new Date(Date.now() + 86400000 * 30).toISOString(),
-          endDate: new Date(Date.now() + 86400000 * 35).toISOString(),
-          duration: 120,
-          topics: ['Mathematics', 'Science', 'English', 'History'],
-          questionCount: 30,
-          isActive: true,
-          createdAt: new Date().toISOString()
-        }
-      ];
-      setScheduledTests(mockScheduledTests);
+      // Fetch test results
+      const { data: resultsData, error: resultsError } = await supabase
+        .from('test_results')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (resultsError) {
+        console.error('Error fetching test results:', resultsError);
+        setTestResults(mockTestResults);
+      } else if (resultsData) {
+        const formattedResults: TestResult[] = resultsData.map(result => ({
+          id: result.id,
+          userId: result.user_id,
+          userName: result.user_name || 'Student',
+          testDate: result.test_date,
+          score: result.score,
+          totalQuestions: result.total_questions,
+          timeSpent: result.time_spent,
+          answers: Array.isArray(result.answers) ? result.answers : [],
+          testId: result.test_id
+        }));
+        
+        setTestResults(formattedResults);
+      }
+      
+      setUsers(mockUsers.filter(user => user.role === 'student'));
       
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -126,29 +145,95 @@ const AdminDashboard = () => {
     }
   };
   
-  const handleScheduleTest = (test: Omit<ScheduledTest, 'id'>) => {
-    const newTest: ScheduledTest = {
-      ...test,
-      id: `test-${Date.now()}`
-    };
-    
-    setScheduledTests(prev => [...prev, newTest]);
-    toast.success('Test scheduled successfully');
+  const handleScheduleTest = async (test: Omit<ScheduledTest, 'id'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_tests')
+        .insert({
+          title: test.title,
+          description: test.description,
+          start_date: test.startDate,
+          end_date: test.endDate,
+          duration: test.duration,
+          question_count: test.questionCount,
+          topics: test.topics,
+          is_active: true
+        })
+        .select()
+        .single();
+        
+      if (error) {
+        console.error('Error scheduling test:', error);
+        toast.error('Failed to schedule test');
+        return;
+      }
+      
+      const newTest: ScheduledTest = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        duration: data.duration,
+        topics: data.topics,
+        questionCount: data.question_count,
+        isActive: data.is_active,
+        createdAt: data.created_at
+      };
+      
+      setScheduledTests(prev => [newTest, ...prev]);
+      toast.success('Test scheduled successfully');
+    } catch (error) {
+      console.error('Error in handleScheduleTest:', error);
+      toast.error('Failed to schedule test');
+    }
   };
   
-  const handleDeleteTest = (id: string) => {
-    setScheduledTests(prev => prev.filter(test => test.id !== id));
-    toast.success('Test deleted successfully');
+  const handleDeleteTest = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_tests')
+        .delete()
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Error deleting test:', error);
+        toast.error('Failed to delete test');
+        return;
+      }
+      
+      setScheduledTests(prev => prev.filter(test => test.id !== id));
+      toast.success('Test deleted successfully');
+    } catch (error) {
+      console.error('Error in handleDeleteTest:', error);
+      toast.error('Failed to delete test');
+    }
   };
   
-  const handleToggleTestStatus = (id: string, isActive: boolean) => {
-    setScheduledTests(prev => 
-      prev.map(test => 
-        test.id === id ? { ...test, isActive } : test
-      )
-    );
-    
-    toast.success(`Test ${isActive ? 'activated' : 'deactivated'} successfully`);
+  const handleToggleTestStatus = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_tests')
+        .update({ is_active: isActive })
+        .eq('id', id);
+        
+      if (error) {
+        console.error('Error updating test status:', error);
+        toast.error('Failed to update test status');
+        return;
+      }
+      
+      setScheduledTests(prev => 
+        prev.map(test => 
+          test.id === id ? { ...test, isActive } : test
+        )
+      );
+      
+      toast.success(`Test ${isActive ? 'activated' : 'deactivated'} successfully`);
+    } catch (error) {
+      console.error('Error in handleToggleTestStatus:', error);
+      toast.error('Failed to update test status');
+    }
   };
   
   const logout = () => {

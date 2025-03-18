@@ -72,6 +72,45 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_tests: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration: number
+          end_date: string
+          id: string
+          is_active: boolean
+          question_count: number
+          start_date: string
+          title: string
+          topics: string[]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration: number
+          end_date: string
+          id?: string
+          is_active?: boolean
+          question_count: number
+          start_date: string
+          title: string
+          topics?: string[]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration?: number
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          question_count?: number
+          start_date?: string
+          title?: string
+          topics?: string[]
+        }
+        Relationships: []
+      }
       test_results: {
         Row: {
           answers: Json
@@ -79,6 +118,7 @@ export type Database = {
           id: string
           score: number
           test_date: string
+          test_id: string | null
           time_spent: number
           total_questions: number
           user_id: string
@@ -89,6 +129,7 @@ export type Database = {
           id?: string
           score: number
           test_date?: string
+          test_id?: string | null
           time_spent: number
           total_questions: number
           user_id: string
@@ -99,11 +140,20 @@ export type Database = {
           id?: string
           score?: number
           test_date?: string
+          test_id?: string | null
           time_spent?: number
           total_questions?: number
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "test_results_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_tests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

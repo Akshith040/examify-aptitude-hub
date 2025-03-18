@@ -56,7 +56,35 @@ export interface SupabaseQuestion {
   options: any; // JSON field in Supabase
   correct_option: number;
   explanation: string | null;
-  topic?: string; // Add this as optional since it doesn't exist in the DB yet
+  topic?: string;
   created_at: string;
   updated_at: string;
+}
+
+// This interface maps to the Supabase scheduled_tests table structure
+export interface SupabaseScheduledTest {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  duration: number;
+  topics: string[];
+  question_count: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+// This interface maps to the Supabase test_results table structure
+export interface SupabaseTestResult {
+  id: string;
+  user_id: string;
+  user_name?: string;
+  test_date: string;
+  score: number;
+  total_questions: number;
+  time_spent: number;
+  answers: any; // JSON field in Supabase
+  created_at: string;
+  test_id?: string;
 }

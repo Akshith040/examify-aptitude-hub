@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ScheduledTest } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TestSchedulerProps {
   topics: string[];
@@ -27,6 +28,7 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
   const [duration, setDuration] = useState(60); // Default 60 minutes
   const [questionCount, setQuestionCount] = useState(10); // Default 10 questions
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleTopicToggle = (topic: string) => {
     setSelectedTopics(prev => 
@@ -36,7 +38,7 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
     );
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!title || !startDate || !endDate || duration <= 0 || questionCount <= 0) {
@@ -54,30 +56,69 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
       return;
     }
     
-    const newTest = {
-      title,
-      description,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      duration,
-      questionCount,
-      topics: selectedTopics,
-      isActive: true,
-      createdAt: new Date().toISOString()
-    };
+    setIsSubmitting(true);
     
-    onScheduleTest(newTest);
-    
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setDuration(60);
-    setQuestionCount(10);
-    setSelectedTopics([]);
-    
-    toast.success('Test scheduled successfully');
+    try {
+      const newTest = {
+        title,
+        description,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        duration,
+        questionCount,
+        topics: selectedTopics,
+        isActive: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Insert into Supabase
+      const { data, error } = await supabase
+        .from('scheduled_tests')
+        .insert({
+          title: newTest.title,
+          description: newTest.description,
+          start_date: newTest.startDate,
+          end_date: newTest.endDate,
+          duration: newTest.duration,
+          question_count: newTest.questionCount,
+          topics: newTest.topics,
+          is_active: newTest.isActive,
+          created_at: newTest.createdAt
+        })
+        .select('id')
+        .single();
+        
+      if (error) {
+        console.error('Error scheduling test:', error);
+        toast.error('Failed to schedule test: ' + error.message);
+        return;
+      }
+      
+      // Add the id from Supabase to the test object
+      const completeTest: ScheduledTest = {
+        ...newTest,
+        id: data.id
+      };
+      
+      // Update the UI
+      onScheduleTest(newTest);
+      
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setDuration(60);
+      setQuestionCount(10);
+      setSelectedTopics([]);
+      
+      toast.success('Test scheduled successfully');
+    } catch (error) {
+      console.error('Error scheduling test:', error);
+      toast.error('Failed to schedule test');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -208,7 +249,9 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
             </div>
           </div>
           
-          <Button type="submit" className="w-full">Schedule Test</Button>
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Scheduling...' : 'Schedule Test'}
+          </Button>
         </form>
       </CardContent>
     </Card>

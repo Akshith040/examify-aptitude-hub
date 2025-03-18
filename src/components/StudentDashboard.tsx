@@ -85,7 +85,8 @@ const StudentDashboard = () => {
                 isCorrect: answer.isCorrect,
                 timeSpent: answer.timeSpent
               }))
-            : []
+            : [],
+          testId: result.test_id
         }));
         
         setTestResults(formattedResults);
@@ -113,17 +114,19 @@ const StudentDashboard = () => {
 
   const fetchScheduledTests = async () => {
     try {
-      // For demo purposes, use mock scheduled tests
+      const now = new Date().toISOString();
+      
+      // Fetch active tests that haven't ended yet
       const { data, error } = await supabase
         .from('scheduled_tests')
         .select('*')
         .eq('is_active', true)
-        .gte('end_date', new Date().toISOString())
+        .gte('end_date', now)
         .order('start_date', { ascending: true });
       
       if (error) {
-        // If there's an error, create mock data
         console.error('Error fetching scheduled tests:', error);
+        // Use mock data as fallback
         const mockScheduledTests: ScheduledTest[] = [
           {
             id: '1',
@@ -304,7 +307,9 @@ const StudentDashboard = () => {
                   {testResults.map((result) => (
                     <div key={result.id} className="flex items-center gap-4 p-3 border rounded-lg">
                       <div className="flex-1">
-                        <p className="font-medium">Aptitude Test</p>
+                        <p className="font-medium">
+                          {result.testId ? 'Scheduled Test' : 'Aptitude Test'}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(result.testDate).toLocaleDateString()} at {new Date(result.testDate).toLocaleTimeString()}
                         </p>
