@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -115,7 +114,7 @@ const AdminDashboard = () => {
         .from('test_results')
         .select('*')
         .order('created_at', { ascending: false });
-        
+      
       if (resultsError) {
         console.error('Error fetching test results:', resultsError);
         setTestResults(mockTestResults);
@@ -141,7 +140,7 @@ const AdminDashboard = () => {
           return {
             id: result.id,
             userId: result.user_id,
-            userName: result.user_name || 'Student', // Safely handle missing user_name field
+            userName: result.user_name || 'Student', // Using a default value for user_name
             testDate: result.test_date,
             score: result.score,
             totalQuestions: result.total_questions,

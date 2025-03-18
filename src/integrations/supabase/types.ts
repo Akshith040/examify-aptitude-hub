@@ -122,6 +122,7 @@ export type Database = {
           time_spent: number
           total_questions: number
           user_id: string
+          user_name: string | null
         }
         Insert: {
           answers: Json
@@ -133,6 +134,7 @@ export type Database = {
           time_spent: number
           total_questions: number
           user_id: string
+          user_name?: string | null
         }
         Update: {
           answers?: Json
@@ -144,6 +146,7 @@ export type Database = {
           time_spent?: number
           total_questions?: number
           user_id?: string
+          user_name?: string | null
         }
         Relationships: [
           {
@@ -160,7 +163,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
