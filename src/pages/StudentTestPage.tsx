@@ -127,7 +127,7 @@ const StudentTestPage = () => {
     );
   }
 
-  return <StudentTest scheduledTestId={testId} scheduledTest={test} />;
+  return <StudentTest testId={testId || ""} scheduledTest={test} />;
 };
 
 export default StudentTestPage;

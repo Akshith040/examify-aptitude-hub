@@ -128,7 +128,14 @@ const AdminDashboard = () => {
           score: result.score,
           totalQuestions: result.total_questions,
           timeSpent: result.time_spent,
-          answers: Array.isArray(result.answers) ? result.answers : [],
+          answers: Array.isArray(result.answers) 
+            ? result.answers.map((answer: any) => ({
+                questionId: answer.questionId || '',
+                selectedOption: typeof answer.selectedOption === 'number' ? answer.selectedOption : -1,
+                isCorrect: Boolean(answer.isCorrect),
+                timeSpent: typeof answer.timeSpent === 'number' ? answer.timeSpent : 0
+              }))
+            : [],
           testId: result.test_id
         }));
         
