@@ -123,7 +123,7 @@ const AdminDashboard = () => {
         const formattedResults: TestResult[] = resultsData.map(result => ({
           id: result.id,
           userId: result.user_id,
-          userName: result.user_name || 'Student',
+          userName: result.user_name || 'Student', // Using a default value since user_name might not exist
           testDate: result.test_date,
           score: result.score,
           totalQuestions: result.total_questions,
