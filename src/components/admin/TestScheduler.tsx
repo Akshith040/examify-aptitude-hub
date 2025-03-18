@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +12,6 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ScheduledTest } from '@/types';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 
 interface TestSchedulerProps {
   topics: string[];
@@ -71,36 +69,7 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
         createdAt: new Date().toISOString()
       };
       
-      // Insert into Supabase
-      const { data, error } = await supabase
-        .from('scheduled_tests')
-        .insert({
-          title: newTest.title,
-          description: newTest.description,
-          start_date: newTest.startDate,
-          end_date: newTest.endDate,
-          duration: newTest.duration,
-          question_count: newTest.questionCount,
-          topics: newTest.topics,
-          is_active: newTest.isActive,
-          created_at: newTest.createdAt
-        })
-        .select('id')
-        .single();
-        
-      if (error) {
-        console.error('Error scheduling test:', error);
-        toast.error('Failed to schedule test: ' + error.message);
-        return;
-      }
-      
-      // Add the id from Supabase to the test object
-      const completeTest: ScheduledTest = {
-        ...newTest,
-        id: data.id
-      };
-      
-      // Update the UI
+      // Call the parent handler which will insert into Supabase
       onScheduleTest(newTest);
       
       // Reset form
@@ -112,7 +81,6 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
       setQuestionCount(10);
       setSelectedTopics([]);
       
-      toast.success('Test scheduled successfully');
     } catch (error) {
       console.error('Error scheduling test:', error);
       toast.error('Failed to schedule test');
