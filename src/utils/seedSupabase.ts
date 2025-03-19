@@ -1,10 +1,11 @@
+
 import { faker } from '@faker-js/faker';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../integrations/supabase/types';
-import 'dotenv/config';
 
-const supabaseUrl = process.env.SUPABASE_URL as string;
-const supabaseKey = process.env.SUPABASE_KEY as string;
+// Use direct URL and key instead of loading from .env
+const supabaseUrl = "https://hkbpyiqzjdqlpeyrgbak.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrYnB5aXF6amRxbHBleXJnYmFrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTk2MzAwNiwiZXhwIjoyMDU3NTM5MDA2fQ.S-lEcWgU32QsAsFtB3_Y-QyrdJ2d9yzvxuhJMnidyEk";
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
@@ -224,19 +225,6 @@ async function seedAdminUser() {
   }
 }
 
-async function seedAll() {
-  try {
-    await seedAdminUser();
-    await seedQuestions();
-    await seedUsers();
-    await seedTestResults();
-    await seedScheduledTests();
-    console.log('All seeding operations completed successfully.');
-  } catch (error) {
-    console.error('Error during seeding:', error);
-  }
-}
-
 async function seedSpecificScheduledTests() {
   console.log('Seeding specific scheduled tests...');
 
@@ -322,6 +310,21 @@ async function seedSpecificScheduledTests() {
   console.log('Specific scheduled tests seeding completed.');
 }
 
+async function seedAll() {
+  try {
+    await seedAdminUser();
+    await seedQuestions();
+    await seedUsers();
+    await seedTestResults();
+    await seedScheduledTests();
+    console.log('All seeding operations completed successfully.');
+    return { success: true };
+  } catch (error) {
+    console.error('Error during seeding:', error);
+    return { success: false, error };
+  }
+}
+
 const seedSupabase = async () => {
   try {
     await seedAll();
@@ -334,8 +337,3 @@ const seedSupabase = async () => {
 };
 
 export { seedQuestions, seedUsers, seedTestResults, seedScheduledTests, seedAdminUser, seedAll, seedSpecificScheduledTests, seedSupabase };
-
-if (typeof process !== 'undefined' && process.argv && process.argv[1] === import.meta.url) {
-  seedAll().then(() => console.log('Seeding complete.'));
-  seedSpecificScheduledTests().then(() => console.log('Specific scheduled tests seeding complete.'));
-}
