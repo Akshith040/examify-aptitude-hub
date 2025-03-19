@@ -1,4 +1,3 @@
-
 import { faker } from '@faker-js/faker';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../integrations/supabase/types';
@@ -51,11 +50,13 @@ async function seedUsers(numberOfUsers: number = 10) {
     const username = faker.internet.userName();
     const email = faker.internet.email();
     const name = faker.person.fullName();
+    const userId = faker.string.uuid();
 
     const { data, error } = await supabase
       .from('profiles')
       .insert([
         {
+          id: userId,
           username: username,
           email: email,
           name: name,
@@ -77,7 +78,6 @@ async function seedUsers(numberOfUsers: number = 10) {
 async function seedTestResults(numberOfResults: number = 20) {
   console.log(`Seeding ${numberOfResults} test results...`);
 
-  // Fetch all users to assign test results to them
   const { data: users, error: usersError } = await supabase.from('profiles').select('id');
 
   if (usersError) {
@@ -90,7 +90,6 @@ async function seedTestResults(numberOfResults: number = 20) {
     return;
   }
 
-  // Fetch all questions to generate answers
   const { data: questions, error: questionsError } = await supabase.from('questions').select('id');
 
   if (questionsError) {
@@ -108,14 +107,13 @@ async function seedTestResults(numberOfResults: number = 20) {
     const testDate = faker.date.past().toISOString();
     const score = faker.number.int({ min: 0, max: 100 });
     const totalQuestions = questions.length;
-    const timeSpent = faker.number.int({ min: 60, max: 3600 }); // Time spent in seconds
+    const timeSpent = faker.number.int({ min: 60, max: 3600 });
 
-    // Generate answers for each question
     const answers = questions.map(question => ({
       questionId: question.id,
       selectedOption: faker.number.int({ min: 0, max: 3 }),
       isCorrect: faker.datatype.boolean(),
-      timeSpent: faker.number.int({ min: 1, max: 30 }), // Time spent on each question in seconds
+      timeSpent: faker.number.int({ min: 1, max: 30 }),
     }));
 
     const { data, error } = await supabase
@@ -189,8 +187,8 @@ async function seedAdminUser() {
   const username = 'admin';
   const email = 'admin@example.com';
   const name = 'Administrator';
+  const adminId = faker.string.uuid();
 
-  // Check if the admin user already exists
   const { data: existingAdmin, error: existingAdminError } = await supabase
     .from('profiles')
     .select('*')
@@ -210,6 +208,7 @@ async function seedAdminUser() {
     .from('profiles')
     .insert([
       {
+        id: adminId,
         username: username,
         email: email,
         name: name,
@@ -238,7 +237,6 @@ async function seedAll() {
   }
 }
 
-// Function to seed scheduled tests with specific data
 async function seedSpecificScheduledTests() {
   console.log('Seeding specific scheduled tests...');
 
@@ -246,8 +244,8 @@ async function seedSpecificScheduledTests() {
     {
       title: 'Mathematics Exam - Algebra Basics',
       description: 'Test your knowledge on basic algebra concepts.',
-      startDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(), // 1 week from now
-      endDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), // 2 weeks from now
+      startDate: new Date(new Date().setDate(new Date().getDate() + 7)).toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(),
       duration: 60,
       questionCount: 25,
       topics: ['Mathematics'],
@@ -256,8 +254,8 @@ async function seedSpecificScheduledTests() {
     {
       title: 'Science Quiz - Introduction to Biology',
       description: 'A quiz covering the fundamental concepts of biology.',
-      startDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), // 10 days from now
-      endDate: new Date(new Date().setDate(new Date().getDate() + 17)).toISOString(), // 17 days from now
+      startDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 17)).toISOString(),
       duration: 45,
       questionCount: 20,
       topics: ['Science'],
@@ -266,8 +264,8 @@ async function seedSpecificScheduledTests() {
     {
       title: 'English Literature - Understanding Shakespeare',
       description: 'Explore the works of Shakespeare and test your comprehension.',
-      startDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(), // 2 weeks from now
-      endDate: new Date(new Date().setDate(new Date().getDate() + 21)).toISOString(), // 3 weeks from now
+      startDate: new Date(new Date().setDate(new Date().getDate() + 14)).toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 21)).toISOString(),
       duration: 75,
       questionCount: 30,
       topics: ['English'],
@@ -276,8 +274,8 @@ async function seedSpecificScheduledTests() {
     {
       title: 'History Test - World War II',
       description: 'Test your knowledge of the major events and figures of World War II.',
-      startDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(), // 3 days from now
-      endDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(), // 10 days from now
+      startDate: new Date(new Date().setDate(new Date().getDate() + 3)).toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(),
       duration: 90,
       questionCount: 40,
       topics: ['History'],
@@ -286,8 +284,8 @@ async function seedSpecificScheduledTests() {
     {
       title: 'Geography Challenge - Mapping the World',
       description: 'A challenge to identify countries, capitals, and geographical landmarks.',
-      startDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(), // 5 days from now
-      endDate: new Date(new Date().setDate(new Date().getDate() + 12)).toISOString(), // 12 days from now
+      startDate: new Date(new Date().setDate(new Date().getDate() + 5)).toISOString(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 12)).toISOString(),
       duration: 50,
       questionCount: 22,
       topics: ['Geography'],
@@ -324,10 +322,19 @@ async function seedSpecificScheduledTests() {
   console.log('Specific scheduled tests seeding completed.');
 }
 
-// Export all seeding functions for use in other files
-export { seedQuestions, seedUsers, seedTestResults, seedScheduledTests, seedAdminUser, seedAll, seedSpecificScheduledTests };
+const seedSupabase = async () => {
+  try {
+    await seedAll();
+    await seedSpecificScheduledTests();
+    return { success: true };
+  } catch (error) {
+    console.error('Error seeding data:', error);
+    return { success: false, error };
+  }
+};
 
-// Only run the seeding functions if the script is run directly
+export { seedQuestions, seedUsers, seedTestResults, seedScheduledTests, seedAdminUser, seedAll, seedSpecificScheduledTests, seedSupabase };
+
 if (typeof process !== 'undefined' && process.argv && process.argv[1] === import.meta.url) {
   seedAll().then(() => console.log('Seeding complete.'));
   seedSpecificScheduledTests().then(() => console.log('Specific scheduled tests seeding complete.'));
