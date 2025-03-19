@@ -2,6 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { InfoIcon } from 'lucide-react';
 
 interface TestStartPageProps {
   questionCount: number;
@@ -29,6 +31,13 @@ const TestStartPage: React.FC<TestStartPageProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          <Alert>
+            <InfoIcon className="h-4 w-4" />
+            <AlertDescription>
+              This test will present {questionCount} questions drawn from the topics selected by your instructor.
+            </AlertDescription>
+          </Alert>
+          
           <p>Instructions:</p>
           <ul className="list-disc pl-5 space-y-2">
             <li>Each question has only one correct answer</li>
@@ -39,7 +48,13 @@ const TestStartPage: React.FC<TestStartPageProps> = ({
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={onStartTest}>Start Test</Button>
+        <Button 
+          className="w-full" 
+          onClick={onStartTest}
+          disabled={questionCount === 0}
+        >
+          {questionCount === 0 ? 'No Questions Available' : 'Start Test'}
+        </Button>
       </CardFooter>
     </Card>
   );

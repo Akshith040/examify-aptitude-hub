@@ -30,10 +30,22 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({
         return;
       }
       
-      // Ensure topics is an array
+      // Ensure topics is an array with at least one topic
+      const topicsArray = Array.isArray(test.topics) ? test.topics : [];
+      if (topicsArray.length === 0) {
+        toast.error('Please select at least one topic for the test');
+        return;
+      }
+      
+      // Validate question count
+      if (test.questionCount <= 0) {
+        toast.error('Question count must be greater than zero');
+        return;
+      }
+      
       const formattedTest = {
         ...test,
-        topics: Array.isArray(test.topics) ? test.topics : []
+        topics: topicsArray
       };
       
       console.log("Scheduling test with data:", formattedTest);
