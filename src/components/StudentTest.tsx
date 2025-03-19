@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -6,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import TestStartPage from './test/TestStartPage';
 import TestQuestion from './test/TestQuestion';
 import TestResults from './test/TestResults';
-import { Card, CardContent } from '@/components/ui/card';  // Added missing imports
+import { Card, CardContent } from '@/components/ui/card';  
 
 interface StudentTestProps {
   testId?: string;
@@ -27,6 +28,7 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
   const [testStartTime, setTestStartTime] = useState<Date>(new Date());
   const [totalTestTime, setTotalTestTime] = useState<number>(0);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [fetchCompleted, setFetchCompleted] = useState(false); // Add this to track fetch completion
   
   const navigate = useNavigate();
   
@@ -36,10 +38,10 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
   useEffect(() => {
     if (!currentUser.id) {
       navigate('/');
-    } else {
+    } else if (!fetchCompleted) {  // Only fetch once
       fetchQuestions();
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, fetchCompleted]);
   
   const fetchQuestions = async () => {
     try {
@@ -50,18 +52,21 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
       
       // Exit early if there's no scheduled test
       if (!scheduledTest) {
+        console.error("No scheduled test information available");
         setLoadError('Test information not found. Please try again later.');
         toast.error('Test information not found');
         setIsLoading(false);
+        setFetchCompleted(true);
         return;
       }
       
       // Check if we have valid topics
       if (!Array.isArray(scheduledTest.topics) || scheduledTest.topics.length === 0) {
-        console.log("No topics specified in the test");
+        console.error("No topics specified in the test:", scheduledTest.topics);
         setLoadError('This test does not have any topics assigned. Please contact your administrator.');
         toast.error('No topics assigned to this test');
         setIsLoading(false);
+        setFetchCompleted(true);
         return;
       }
       
@@ -70,28 +75,44 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
       console.log(`Attempting to fetch ~${questionsPerTopic} questions per topic`);
       
       let allQuestions: SupabaseQuestion[] = [];
+      let fetchErrors = 0;
       
       // Fetch questions for each topic
       for (const topic of scheduledTest.topics) {
         console.log(`Fetching questions for topic: ${topic}`);
         
-        const { data, error } = await supabase
-          .from('questions')
-          .select('*')
-          .eq('topic', topic)
-          .limit(questionsPerTopic);
+        try {
+          const { data, error } = await supabase
+            .from('questions')
+            .select('*')
+            .eq('topic', topic)
+            .limit(questionsPerTopic);
+            
+          if (error) {
+            console.error(`Error fetching questions for topic ${topic}:`, error);
+            fetchErrors++;
+            continue; // Try other topics if one fails
+          }
           
-        if (error) {
-          console.error(`Error fetching questions for topic ${topic}:`, error);
-          continue; // Try other topics if one fails
+          if (data && data.length > 0) {
+            console.log(`Found ${data.length} questions for topic ${topic}`);
+            allQuestions = [...allQuestions, ...data];
+          } else {
+            console.log(`No questions found for topic ${topic}`);
+          }
+        } catch (err) {
+          console.error(`Exception fetching questions for topic ${topic}:`, err);
+          fetchErrors++;
         }
-        
-        if (data && data.length > 0) {
-          console.log(`Found ${data.length} questions for topic ${topic}`);
-          allQuestions = [...allQuestions, ...data];
-        } else {
-          console.log(`No questions found for topic ${topic}`);
-        }
+      }
+      
+      // If all fetch attempts failed, show an error
+      if (fetchErrors === scheduledTest.topics.length) {
+        setLoadError('Failed to fetch questions. Please try again later.');
+        toast.error('Failed to load questions');
+        setIsLoading(false);
+        setFetchCompleted(true);
+        return;
       }
       
       // If we couldn't get enough questions from the specified topics, log a warning
@@ -99,49 +120,18 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
         console.warn(`Could only find ${allQuestions.length} questions across all topics, needed ${scheduledTest.questionCount}`);
       }
       
-      // Limit to the required number of questions, but ensure we have at least one from each topic if possible
-      if (allQuestions.length > scheduledTest.questionCount) {
-        // Shuffle the questions to randomize the selection
-        allQuestions = shuffleArray(allQuestions);
-        
-        // Try to ensure at least one question from each topic if possible
-        const questionsMap = new Map<string, SupabaseQuestion[]>();
-        
-        // Group questions by topic
-        allQuestions.forEach(q => {
-          const topic = q.topic || 'unknown';
-          if (!questionsMap.has(topic)) {
-            questionsMap.set(topic, []);
-          }
-          questionsMap.get(topic)?.push(q);
-        });
-        
-        // Select questions, prioritizing having at least one from each topic
-        const selectedQuestions: SupabaseQuestion[] = [];
-        
-        // First, take one question from each topic
-        for (const topic of scheduledTest.topics) {
-          const topicQuestions = questionsMap.get(topic) || [];
-          if (topicQuestions.length > 0) {
-            selectedQuestions.push(topicQuestions.shift()!);
-          }
-        }
-        
-        // Then fill up remaining slots with random questions
-        const remainingQuestions = Array.from(questionsMap.values()).flat();
-        while (selectedQuestions.length < scheduledTest.questionCount && remainingQuestions.length > 0) {
-          selectedQuestions.push(remainingQuestions.shift()!);
-        }
-        
-        allQuestions = selectedQuestions;
-      }
-      
       if (allQuestions.length === 0) {
         console.error("No questions found matching the criteria");
         setLoadError('No questions available for this test. Please contact your administrator.');
         toast.error('No questions available for this test');
         setIsLoading(false);
+        setFetchCompleted(true);
         return;
+      }
+      
+      // Limit to the required number of questions, ensuring at least one from each topic if possible
+      if (allQuestions.length > scheduledTest.questionCount) {
+        allQuestions = selectQuestionsFromTopics(allQuestions, scheduledTest.topics, scheduledTest.questionCount);
       }
       
       console.log(`Successfully fetched ${allQuestions.length} questions across all topics`);
@@ -182,13 +172,70 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
       setTimeSpentPerQuestion(Array(formattedQuestions.length).fill(0));
       setQuestionStatus(Array(formattedQuestions.length).fill('unanswered'));
       setMarkedForReview(Array(formattedQuestions.length).fill(false));
+      setFetchCompleted(true);
     } catch (error: any) {
       console.error('Error fetching questions:', error);
       setLoadError('Failed to load questions. Please try again later.');
       toast.error('Failed to load questions');
+      setFetchCompleted(true);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to select questions from topics
+  const selectQuestionsFromTopics = (
+    questions: SupabaseQuestion[], 
+    topics: string[], 
+    totalRequired: number
+  ): SupabaseQuestion[] => {
+    // Shuffle the questions to randomize the selection
+    const shuffledQuestions = shuffleArray([...questions]);
+    
+    // Group questions by topic
+    const questionsByTopic = new Map<string, SupabaseQuestion[]>();
+    
+    for (const topic of topics) {
+      questionsByTopic.set(topic, []);
+    }
+    
+    for (const question of shuffledQuestions) {
+      const topic = question.topic || '';
+      if (questionsByTopic.has(topic)) {
+        questionsByTopic.get(topic)?.push(question);
+      }
+    }
+    
+    const selectedQuestions: SupabaseQuestion[] = [];
+    
+    // First, take one question from each topic
+    for (const topic of topics) {
+      const topicQuestions = questionsByTopic.get(topic) || [];
+      if (topicQuestions.length > 0) {
+        selectedQuestions.push(topicQuestions.shift()!);
+      }
+    }
+    
+    // Then fill up remaining slots from all topics
+    const remainingQuestionsByTopic = Array.from(questionsByTopic.values());
+    let currentTopicIndex = 0;
+    
+    while (selectedQuestions.length < totalRequired) {
+      const currentTopicQuestions = remainingQuestionsByTopic[currentTopicIndex];
+      if (currentTopicQuestions && currentTopicQuestions.length > 0) {
+        selectedQuestions.push(currentTopicQuestions.shift()!);
+      }
+      
+      // Move to next topic
+      currentTopicIndex = (currentTopicIndex + 1) % remainingQuestionsByTopic.length;
+      
+      // If we've gone through all topics and can't find more questions, break
+      if (currentTopicIndex === 0 && !remainingQuestionsByTopic.some(questions => questions.length > 0)) {
+        break;
+      }
+    }
+    
+    return selectedQuestions;
   };
   
   // Helper function to shuffle an array

@@ -31,21 +31,37 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({
       }
       
       // Ensure topics is an array with at least one topic
-      const topicsArray = Array.isArray(test.topics) ? test.topics : [];
+      const topicsArray = Array.isArray(test.topics) ? test.topics : 
+                         (typeof test.topics === 'string' ? [test.topics] : []);
+      
       if (topicsArray.length === 0) {
         toast.error('Please select at least one topic for the test');
         return;
       }
       
       // Validate question count
-      if (test.questionCount <= 0) {
+      if (!test.questionCount || test.questionCount <= 0) {
         toast.error('Question count must be greater than zero');
+        return;
+      }
+      
+      // Validate test duration
+      if (!test.duration || test.duration <= 0) {
+        toast.error('Test duration must be greater than zero');
+        return;
+      }
+      
+      // Validate dates
+      if (!test.startDate || !test.endDate) {
+        toast.error('Start and end dates are required');
         return;
       }
       
       const formattedTest = {
         ...test,
-        topics: topicsArray
+        topics: topicsArray,
+        questionCount: parseInt(String(test.questionCount)),
+        duration: parseInt(String(test.duration))
       };
       
       console.log("Scheduling test with data:", formattedTest);

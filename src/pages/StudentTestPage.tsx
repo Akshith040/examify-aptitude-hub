@@ -14,18 +14,20 @@ const StudentTestPage = () => {
   const [test, setTest] = useState<ScheduledTest | null>(null);
   const [loading, setLoading] = useState(Boolean(testId));
   const [error, setError] = useState<string | null>(null);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
   
   useEffect(() => {
-    // Only fetch test data if testId is provided
-    if (testId) {
+    // Only fetch test data if testId is provided and not attempted yet
+    if (testId && !fetchAttempted) {
       fetchTestData(testId);
     }
-  }, [testId]);
+  }, [testId, fetchAttempted]);
   
   const fetchTestData = async (id: string) => {
     try {
       setLoading(true);
       setError(null);
+      setFetchAttempted(true);
       
       console.log("Fetching test data for ID:", id);
       
@@ -78,11 +80,19 @@ const StudentTestPage = () => {
         startDate: data.start_date,
         endDate: data.end_date,
         duration: data.duration,
-        topics: Array.isArray(data.topics) ? data.topics : [],
+        topics: Array.isArray(data.topics) ? data.topics : 
+               (typeof data.topics === 'string' ? [data.topics] : []),
         questionCount: data.question_count,
         isActive: data.is_active,
         createdAt: data.created_at
       };
+      
+      // Ensure topics is an array and not empty
+      if (!formattedTest.topics || formattedTest.topics.length === 0) {
+        console.error('Test does not have any topics assigned:', formattedTest);
+        setError('This test does not have any topics assigned. Please contact your administrator.');
+        return;
+      }
       
       console.log("Formatted test data:", formattedTest);
       setTest(formattedTest);
