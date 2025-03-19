@@ -1,3 +1,4 @@
+
 import { faker } from '@faker-js/faker';
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../integrations/supabase/types';
@@ -48,16 +49,14 @@ async function seedUsers(numberOfUsers: number = 10) {
 
   for (let i = 0; i < numberOfUsers; i++) {
     const username = faker.internet.userName();
-    const password = faker.internet.password();
     const email = faker.internet.email();
     const name = faker.person.fullName();
 
     const { data, error } = await supabase
-      .from('users')
+      .from('profiles')
       .insert([
         {
           username: username,
-          password: password,
           email: email,
           name: name,
           role: 'student',
@@ -66,7 +65,7 @@ async function seedUsers(numberOfUsers: number = 10) {
       .select();
 
     if (error) {
-      console.error('Error inserting user:', error);
+      console.error('Error inserting user profile:', error);
     } else {
       console.log(`Inserted user ${i + 1}/${numberOfUsers}`);
     }
@@ -79,7 +78,7 @@ async function seedTestResults(numberOfResults: number = 20) {
   console.log(`Seeding ${numberOfResults} test results...`);
 
   // Fetch all users to assign test results to them
-  const { data: users, error: usersError } = await supabase.from('users').select('id');
+  const { data: users, error: usersError } = await supabase.from('profiles').select('id');
 
   if (usersError) {
     console.error('Error fetching users:', usersError);
@@ -188,13 +187,12 @@ async function seedAdminUser() {
   console.log('Seeding admin user...');
 
   const username = 'admin';
-  const password = 'password'; // Please hash this in a real application
   const email = 'admin@example.com';
   const name = 'Administrator';
 
   // Check if the admin user already exists
   const { data: existingAdmin, error: existingAdminError } = await supabase
-    .from('users')
+    .from('profiles')
     .select('*')
     .eq('username', username);
 
@@ -209,11 +207,10 @@ async function seedAdminUser() {
   }
 
   const { data, error } = await supabase
-    .from('users')
+    .from('profiles')
     .insert([
       {
         username: username,
-        password: password,
         email: email,
         name: name,
         role: 'admin',
@@ -317,13 +314,6 @@ async function seedSpecificScheduledTests() {
       ])
       .select();
 
-      // Handle the data safely and check for null
-    const insertedId = data?.id;
-    if (!insertedId) {
-      console.error('Failed to insert scheduled test: No ID returned');
-      continue; // Skip this iteration if no ID was returned
-    }
-
     if (error) {
       console.error('Error inserting specific scheduled test:', error);
     } else {
@@ -334,9 +324,11 @@ async function seedSpecificScheduledTests() {
   console.log('Specific scheduled tests seeding completed.');
 }
 
+// Export all seeding functions for use in other files
+export { seedQuestions, seedUsers, seedTestResults, seedScheduledTests, seedAdminUser, seedAll, seedSpecificScheduledTests };
 
 // Only run the seeding functions if the script is run directly
-if (import.meta.path === process.argv[1]) {
+if (typeof process !== 'undefined' && process.argv && process.argv[1] === import.meta.url) {
   seedAll().then(() => console.log('Seeding complete.'));
   seedSpecificScheduledTests().then(() => console.log('Specific scheduled tests seeding complete.'));
 }
