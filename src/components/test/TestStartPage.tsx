@@ -6,15 +6,25 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 interface TestStartPageProps {
   questionCount: number;
   onStartTest: () => void;
+  testTitle?: string;
+  testDuration?: number;
 }
 
-const TestStartPage: React.FC<TestStartPageProps> = ({ questionCount, onStartTest }) => {
+const TestStartPage: React.FC<TestStartPageProps> = ({ 
+  questionCount, 
+  onStartTest,
+  testTitle = "Aptitude Test",
+  testDuration = 60
+}) => {
   return (
     <Card className="w-full max-w-3xl mx-auto glass-panel animate-fade-in">
       <CardHeader>
-        <CardTitle className="text-2xl">Aptitude Test</CardTitle>
+        <CardTitle className="text-2xl">{testTitle}</CardTitle>
         <CardDescription>
-          You will have 1 minute to answer each question. The test has {questionCount} questions in total.
+          {testDuration > 1 
+            ? `This test has a total duration of ${testDuration} minutes.` 
+            : `You will have 1 minute to answer each question.`}
+          The test has {questionCount} questions in total.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -22,8 +32,8 @@ const TestStartPage: React.FC<TestStartPageProps> = ({ questionCount, onStartTes
           <p>Instructions:</p>
           <ul className="list-disc pl-5 space-y-2">
             <li>Each question has only one correct answer</li>
-            <li>If you don't answer within 60 seconds, the test will automatically move to the next question</li>
-            <li>You cannot go back to previous questions</li>
+            <li>If you don't answer within the time limit, the test will automatically move to the next question</li>
+            <li>You cannot go back to previous questions once submitted</li>
             <li>Your final score will be displayed at the end of the test</li>
           </ul>
         </div>

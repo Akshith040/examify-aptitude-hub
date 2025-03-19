@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import StudentTest from "@/components/StudentTest";
 import { useSearchParams } from "react-router-dom";
@@ -5,6 +6,7 @@ import { ScheduledTest } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const StudentTestPage = () => {
   const [searchParams] = useSearchParams();
@@ -23,6 +25,9 @@ const StudentTestPage = () => {
   const fetchTestData = async (id: string) => {
     try {
       setLoading(true);
+      setError(null);
+      
+      console.log("Fetching test data for ID:", id);
       
       const { data, error } = await supabase
         .from('scheduled_tests')
@@ -33,13 +38,17 @@ const StudentTestPage = () => {
       if (error) {
         console.error('Error fetching test:', error);
         setError('Could not load test. It may have been deleted or is no longer available.');
+        toast.error('Failed to load test data');
         return;
       }
       
       if (!data) {
         setError('Test not found');
+        toast.error('Test not found');
         return;
       }
+      
+      console.log("Test data received:", data);
       
       // Check if test is active
       const now = new Date();
@@ -75,11 +84,13 @@ const StudentTestPage = () => {
         createdAt: data.created_at
       };
       
+      console.log("Formatted test data:", formattedTest);
       setTest(formattedTest);
       
     } catch (err) {
       console.error('Error:', err);
       setError('An unexpected error occurred');
+      toast.error('Failed to load test');
     } finally {
       setLoading(false);
     }

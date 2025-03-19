@@ -26,6 +26,7 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [testStartTime, setTestStartTime] = useState<Date>(new Date());
   const [totalTestTime, setTotalTestTime] = useState<number>(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   const navigate = useNavigate();
   
@@ -43,52 +44,84 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
   const fetchQuestions = async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
+      
+      console.log("Fetching questions for scheduled test:", scheduledTest);
       
       // If we have a scheduled test with topics, filter questions by those topics
       let query = supabase.from('questions').select('*');
       
       if (scheduledTest && Array.isArray(scheduledTest.topics) && scheduledTest.topics.length > 0) {
+        console.log(`Filtering questions by topics: ${scheduledTest.topics.join(', ')}`);
         query = query.in('topic', scheduledTest.topics);
+      } else {
+        console.log("No topics specified, fetching all questions");
       }
       
       // Limit to the number of questions in the scheduled test if available
       if (scheduledTest && scheduledTest.questionCount) {
+        console.log(`Limiting to ${scheduledTest.questionCount} questions`);
         query = query.limit(scheduledTest.questionCount);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching questions:', error);
+        setLoadError('Failed to load questions. Please try again later.');
+        toast.error('Failed to load questions');
+        return;
+      }
       
-      if (data && data.length > 0) {
-        // Transform data to match Question type
-        const formattedQuestions: Question[] = data.map((q: SupabaseQuestion) => ({
+      if (!data || data.length === 0) {
+        console.log("No questions found matching the criteria");
+        setLoadError('No questions available for this test. Please contact your administrator.');
+        toast.error('No questions available for this test');
+        return;
+      }
+      
+      console.log(`Successfully fetched ${data.length} questions`);
+      
+      // Transform data to match Question type
+      const formattedQuestions: Question[] = data.map((q: SupabaseQuestion) => {
+        let parsedOptions;
+        try {
+          if (Array.isArray(q.options)) {
+            parsedOptions = q.options;
+          } else if (typeof q.options === 'string') {
+            parsedOptions = JSON.parse(q.options);
+          } else if (typeof q.options === 'object') {
+            parsedOptions = Object.values(q.options).map(val => String(val));
+          } else {
+            console.error('Invalid options format:', q.options);
+            parsedOptions = ["Option 1", "Option 2", "Option 3", "Option 4"];
+          }
+        } catch (err) {
+          console.error('Error parsing options:', err);
+          parsedOptions = ["Option 1", "Option 2", "Option 3", "Option 4"];
+        }
+        
+        return {
           id: q.id,
           text: q.text,
-          // Properly handle options parsing based on its type
-          options: Array.isArray(q.options) 
-            ? q.options 
-            : (typeof q.options === 'string' 
-                ? JSON.parse(q.options) 
-                : Object.values(q.options).map(val => String(val))),
+          options: parsedOptions,
           correctOption: q.correct_option,
           explanation: q.explanation || undefined,
-          topic: q.topic || undefined  // Handle the case where topic might be undefined
-        }));
-        
-        setQuestions(formattedQuestions);
-        setSelectedOptions(Array(formattedQuestions.length).fill(-1));
-        setTimeSpentPerQuestion(Array(formattedQuestions.length).fill(0));
-        setQuestionStatus(Array(formattedQuestions.length).fill('unanswered'));
-        setMarkedForReview(Array(formattedQuestions.length).fill(false));
-      } else {
-        toast.error('No questions available for the test');
-        navigate('/student/dashboard');
-      }
+          topic: q.topic || undefined
+        };
+      });
+      
+      console.log("Formatted questions:", formattedQuestions);
+      
+      setQuestions(formattedQuestions);
+      setSelectedOptions(Array(formattedQuestions.length).fill(-1));
+      setTimeSpentPerQuestion(Array(formattedQuestions.length).fill(0));
+      setQuestionStatus(Array(formattedQuestions.length).fill('unanswered'));
+      setMarkedForReview(Array(formattedQuestions.length).fill(false));
     } catch (error: any) {
       console.error('Error fetching questions:', error);
+      setLoadError('Failed to load questions. Please try again later.');
       toast.error('Failed to load questions');
-      navigate('/student/dashboard');
     } finally {
       setIsLoading(false);
     }
@@ -232,8 +265,34 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
     );
   }
   
+  if (loadError) {
+    return (
+      <div className="container mx-auto py-10 animate-fade-in">
+        <Card className="max-w-4xl mx-auto">
+          <CardContent className="py-10 text-center">
+            <h2 className="text-2xl font-medium mb-4">Cannot Load Test</h2>
+            <p className="text-muted-foreground mb-6">{loadError}</p>
+            <a 
+              href="/student/dashboard" 
+              className="text-primary hover:underline"
+            >
+              Return to Dashboard
+            </a>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   if (!testStarted) {
-    return <TestStartPage questionCount={questions.length} onStartTest={startTest} />;
+    return (
+      <TestStartPage 
+        questionCount={questions.length} 
+        onStartTest={startTest} 
+        testTitle={scheduledTest?.title || "Aptitude Test"}
+        testDuration={scheduledTest?.duration || 60}
+      />
+    );
   }
   
   if (testComplete && testResult) {
@@ -261,7 +320,24 @@ const StudentTest: React.FC<StudentTestProps> = ({ testId, scheduledTest }) => {
     );
   }
   
-  return null;
+  return (
+    <div className="container mx-auto py-10 animate-fade-in">
+      <Card className="max-w-4xl mx-auto">
+        <CardContent className="py-10 text-center">
+          <h2 className="text-2xl font-medium mb-4">No Questions Available</h2>
+          <p className="text-muted-foreground mb-6">
+            There are no questions available for this test. Please contact your administrator.
+          </p>
+          <a 
+            href="/student/dashboard" 
+            className="text-primary hover:underline"
+          >
+            Return to Dashboard
+          </a>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default StudentTest;

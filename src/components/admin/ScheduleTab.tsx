@@ -30,8 +30,16 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({
         return;
       }
       
+      // Ensure topics is an array
+      const formattedTest = {
+        ...test,
+        topics: Array.isArray(test.topics) ? test.topics : []
+      };
+      
+      console.log("Scheduling test with data:", formattedTest);
+      
       // The onScheduleTest function from AdminDashboard handles the Supabase insert
-      onScheduleTest(test);
+      onScheduleTest(formattedTest);
     } catch (error) {
       console.error('Error in handleScheduleTest:', error);
       toast.error('An error occurred while scheduling the test');
