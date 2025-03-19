@@ -4,6 +4,7 @@ import { ScheduledTest } from '@/types';
 import TestScheduler from './TestScheduler';
 import ScheduledTestList from './ScheduledTestList';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScheduleTabProps {
   topics: string[];
@@ -22,6 +23,13 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({
 }) => {
   const handleScheduleTest = async (test: Omit<ScheduledTest, 'id'>) => {
     try {
+      // Check authentication status before proceeding
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error('You must be logged in to schedule tests');
+        return;
+      }
+      
       // The onScheduleTest function from AdminDashboard handles the Supabase insert
       onScheduleTest(test);
     } catch (error) {

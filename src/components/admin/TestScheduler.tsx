@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ScheduledTest } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TestSchedulerProps {
   topics: string[];
@@ -57,6 +59,27 @@ const TestScheduler: React.FC<TestSchedulerProps> = ({ topics, onScheduleTest })
     setIsSubmitting(true);
     
     try {
+      // Check if user is authenticated and has admin role
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error('You must be logged in to schedule tests');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Get current user role
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', sessionData.session.user.id)
+        .single();
+      
+      if (userError || !userData || userData.role !== 'admin') {
+        toast.error('You must be an admin to schedule tests');
+        setIsSubmitting(false);
+        return;
+      }
+      
       const newTest = {
         title,
         description,
